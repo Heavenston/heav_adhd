@@ -145,7 +145,6 @@ export class Renderer {
     this.ctx.fillStyle = BACKGROUND_COLOR;
     this.ctx.fillRect(0,0,this.canvas.width,this.canvas.height);
 
-
     for (const bubble of this.bubbles) {
       this.ctx.fillStyle = bubble.color;
       this.ctx.beginPath();
