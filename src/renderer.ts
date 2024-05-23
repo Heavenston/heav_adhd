@@ -1,7 +1,6 @@
 import { Vec2, clamp, lerp } from "./math";
 import { UserError } from "./usererror";
 
-const TARGET_BUBBLE_COUNT = 40;
 const BACKGROUND_COLOR = "#202020";
 const BUBBLE_DYING_DURATION = 0.5;
 
@@ -29,6 +28,10 @@ class Bubble {
     this.life = life;
     this.targetVelocity = velocity;
   };
+
+  get maxRadius(): number {
+    return this.targetRadius;
+  }
 
   get radius(): number {
     return clamp(this.interpolatedRadius, 0, null);
@@ -142,6 +145,8 @@ export class Renderer {
   public mousePos: Vec2 | null = null;
   public mouseSpeed: Vec2 | null = null;
 
+  public targetBubbleCount: number = 40;
+
   public constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas;
     const ctx = canvas.getContext("2d");
@@ -155,12 +160,36 @@ export class Renderer {
     this.canvas.addEventListener("mouseleave", () => {
       this.mousePos = null;
     });
+
+    this.canvas.addEventListener("wheel", e => {
+      if (e.deltaY > 0) {
+        this.targetBubbleCount -= 1;
+        if (this.targetBubbleCount < 1)
+          this.targetBubbleCount = 1;
+      }
+      else if (e.deltaY < 1) {
+        this.targetBubbleCount += 1;
+      }
+    });
+  }
+
+  private trySpawnBall(ball: Bubble): boolean {
+    for (const other of this.bubbles) {
+      if (other.pos.clone().sub(ball.pos).norm() < other.maxRadius + ball.maxRadius) {
+        return false;
+      }
+    }
+    this.bubbles.push(ball);
+    return true;
   }
 
   private spawnBalls() {
     // const delta = this.totalTime < 10 ? 10 - this.totalTime : 0;
-    while (this.bubbles.length < TARGET_BUBBLE_COUNT) {
-      this.bubbles.push(new Bubble(
+    // let max_try = (TARGET_BUBBLE_COUNT - this.bubbles.length) * 2;
+    let max_try = 5;
+    while (max_try > 0 && this.bubbles.length < this.targetBubbleCount) {
+      max_try -= 1;
+      this.trySpawnBall(new Bubble(
         this,
 
         Vec2.random().mul(this.canvas.width, this.canvas.height),
@@ -190,6 +219,12 @@ export class Renderer {
       );
       this.ctx.fill();
     }
+
+    const text = `balls, count: ${this.bubbles.length}, target: ${this.targetBubbleCount} (use scroll wheel)`;
+    const fontSize = 20;
+    this.ctx.fillStyle = "white";
+    this.ctx.font = `${fontSize}px sans`;
+    this.ctx.fillText(text, 5, 5 + fontSize);
   }
 
   public update(dt: number) {
