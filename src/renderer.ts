@@ -51,6 +51,30 @@ class Bubble {
     return `rgba(${choice.map(Math.round).join(",")},${this.opacity})`;
   }
 
+  private objectAt(
+    diff: Vec2,
+    size: number,
+    forceSize: number,
+    forceMultiplier: number = 10,
+  ): boolean {
+    const distance = diff.norm();
+    const contact_distance = distance - (this.radius + size);
+
+    if (contact_distance < 0)
+      return true;
+
+    const forceRadius = this.forceRadius + forceSize;
+
+    if (contact_distance < forceRadius) {
+      const closness = 1 - contact_distance / forceRadius;
+      this.closest = Math.max(closness, this.closest);
+      let force = Math.pow(closness, 2) * forceMultiplier;
+      this.velocity.add(diff.clone().div(distance).mul(force));
+    }
+
+    return false;
+  }
+
   public update() {
     if (this.isDead())
       return;
@@ -70,28 +94,27 @@ class Bubble {
       this.kill();
     }
 
-    let closest = 1;
+    this.closest = 0;
     for (const bubble of this.renderer.bubbles) {
       if (bubble === this || bubble.isDying())
         continue;
       const diff = this.pos.clone().sub(bubble.pos);
-      const distance = diff.norm();
-      const contact_distance = distance - (this.radius + bubble.radius);
-
-      if (contact_distance < 0) {
-        this.kill();
+      if (this.objectAt(diff, bubble.radius, 0)) {
         bubble.kill();
-        return;
-      }
-
-      if (contact_distance < this.forceRadius) {
-        const closness = contact_distance / this.forceRadius;
-        closest = Math.min(closness, closest);
-        let force = Math.pow(1 - closness, 2) * 10;
-        this.velocity.add(diff.clone().div(distance).mul(force));
+        this.kill();
       }
     }
-    this.closest = 1-closest;
+
+    if (this.renderer.mousePos !== null) {
+      const mul = this.renderer.mouseSpeed?.norm() ?? 0;
+      if (this.objectAt(
+        this.pos.clone().sub(this.renderer.mousePos),
+        10, 50,
+        clamp(mul, 10, 500),
+      )) {
+        this.kill();
+      }
+    }
   }
 
   public isDead(): boolean {
@@ -115,12 +138,23 @@ export class Renderer {
   public dt: number = 0;
   public bubbles: Bubble[] = [];
 
+  private mouseLastPos: Vec2 | null = null;
+  public mousePos: Vec2 | null = null;
+  public mouseSpeed: Vec2 | null = null;
+
   public constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas;
     const ctx = canvas.getContext("2d");
     if (!ctx)
       throw new UserError("No context?");
     this.ctx = ctx;
+
+    this.canvas.addEventListener("mousemove", e => {
+      this.mousePos = new Vec2(e.clientX, e.clientY);
+    });
+    this.canvas.addEventListener("mouseleave", () => {
+      this.mousePos = null;
+    });
   }
 
   private spawnBalls() {
@@ -162,6 +196,13 @@ export class Renderer {
     this.totalTime += dt;
     this.dt = dt;
 
+    if (this.mousePos !== null && this.mouseLastPos !== null) {
+      this.mouseSpeed = this.mousePos.clone().sub(this.mouseLastPos).div(dt);
+    }
+    else {
+      this.mouseSpeed = null;
+    }
+
     const toRemove = [];
     for (const bubble of this.bubbles) {
       bubble.update();
@@ -176,7 +217,7 @@ export class Renderer {
     this.spawnBalls();
 
     this.draw();
+
+    this.mouseLastPos = this.mousePos;
   }
 }
-
-
