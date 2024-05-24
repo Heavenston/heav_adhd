@@ -19,7 +19,7 @@ const BACKGROUND_COLOR = "#202020";
 const BUBBLE_DYING_DURATION = 0.5;
 const MOUSE_CLICK_COOLDOWN = 2;
 
-const GOLD_BUBBLE_PROBABILITY = 0.5 / 100;
+const GOLD_BUBBLE_PROBABILITY = 0.01;
 
 const DEFAULT_BUBBLE_COLOR: BubbleColorCfg = {
   default: Object.freeze([100, 136, 234] as const),
@@ -27,7 +27,7 @@ const DEFAULT_BUBBLE_COLOR: BubbleColorCfg = {
 };
 const GOLD_BUBBLE_COLOR: BubbleColorCfg = {
   default: Object.freeze([236, 189, 0] as const),
-  close: Object.freeze([236, 118, 0] as const),
+  close: Object.freeze([236, 45, 0] as const),
 };
 
 class Bubble implements Entity {
@@ -43,6 +43,8 @@ class Bubble implements Entity {
 
   public isGolden: boolean = false;
   public colorCfg: BubbleColorCfg = DEFAULT_BUBBLE_COLOR;
+
+  public goldPair: Bubble | null = null;
 
   public constructor(
     public readonly renderer: Renderer,
@@ -121,6 +123,7 @@ class Bubble implements Entity {
     if (this.isDying()) {
       this.interpolatedRadius += dt * 100;
       this.opacity = Math.pow(this.life / BUBBLE_DYING_DURATION, 3);
+      this.goldPair = null;
       return;
     }
     this.interpolatedRadius = lerp(this.interpolatedRadius, this.targetRadius, clamp(dt * 10, 0, 1));
@@ -167,17 +170,28 @@ class Bubble implements Entity {
     }
 
     this.closest = 0;
+    let foundPair = false;
     for (const bubble of this.renderer.bubbles) {
       if (bubble === this || bubble.isDying())
         continue;
+
+      if (this.isGolden && this.goldPair === null && bubble.isGolden && bubble.goldPair === null) {
+        this.goldPair = bubble;
+        bubble.goldPair = this;
+      }
+      foundPair = foundPair || (bubble === this.goldPair);
+
       const diff = this.pos.clone().sub(bubble.pos);
-      if (this.objectAt(diff, bubble.radius, 0)) {
+      if (this.objectAt(diff, bubble.radius, 0, bubble === this.goldPair ? 0 : undefined)) {
         const both = bubble.isGolden && this.isGolden;
         if (!bubble.isGolden || both)
           bubble.kill(true);
         if (!this.isGolden || both)
           this.kill(true);
       }
+    }
+    if (!foundPair) {
+      this.goldPair = null;
     }
 
     if (this.renderer.mousePos !== null && this.renderer.timeSinceLastClick() > MOUSE_CLICK_COOLDOWN) {
@@ -194,6 +208,15 @@ class Bubble implements Entity {
     for (const ff of this.renderer.forceFields) {
       this.velocity.add(ff.getForceOn(this).div(dt));
     }
+
+    if (this.goldPair !== null) {
+      const diff = this.pos.clone().sub(this.goldPair.pos);
+      const dist = diff.norm();
+      const force = diff.clone().div(dist)
+        .mul(clamp(dist, 50, null))
+        .mul(-1);
+      this.velocity.add(force.mul(dt));
+    }
   }
 
   public draw() {
@@ -207,6 +230,19 @@ class Bubble implements Entity {
       0, Math.PI * 2,
     );
     ctx.fill();
+
+    if (this.goldPair !== null) {
+      const target = this.pos.clone().sub(this.goldPair.pos).mul(0.5).add(this.goldPair.pos);
+
+      console.log("gold");
+      ctx.strokeStyle = this.color;
+      ctx.lineCap = "round";
+      ctx.lineWidth = 5;
+      ctx.beginPath();
+      ctx.moveTo(this.pos.x, this.pos.y);
+      ctx.lineTo(target.x, target.y);
+      ctx.stroke();
+    }
   }
 
   public isDead(): boolean {
@@ -474,7 +510,12 @@ export class Renderer {
     this.ctx.fillRect(0,0,this.canvas.width,this.canvas.height);
 
     for (const bubble of this.bubbles) {
-      bubble.draw();
+      if (!bubble.isGolden)
+        bubble.draw();
+    }
+    for (const bubble of this.bubbles) {
+      if (bubble.isGolden)
+        bubble.draw();
     }
     for (const ff of this.forceFields) {
       ff.draw();
