@@ -4,7 +4,8 @@
     "module": "esnext",
     "target": "esnext",
     "strict": true,
-    "emit": false
+    "emit": false,
+    "noImplicitOverride": true
   },
   "include": ["src/**/*"]
 }

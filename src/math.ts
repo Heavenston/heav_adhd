@@ -38,7 +38,9 @@ export class Vec2 {
     return new Vec2(Math.cos(angle), Math.sin(angle));
   }
 
-  public static ZERO: Readonly<Vec2> = Vec2.splat(0);
+  public static get ZERO(): Readonly<Vec2> {
+    return Vec2.splat(0);
+  }
 
   public clone(): Vec2 {
     return new Vec2(this.x, this.y);
