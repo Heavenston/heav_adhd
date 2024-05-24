@@ -56,6 +56,25 @@ export class Vec2 {
     return this;
   }
 
+  public eq(other: Vec2): boolean;
+  public eq(val: number): boolean;
+  public eq(x: number, y: number): boolean;
+  public eq(other: Vec2 | number, other2?: number): boolean {
+    if (other instanceof Vec2) {
+      return this.x === other.x && this.y === other.y;
+    }
+
+    if (typeof other === "number" && other2 === undefined) {
+      return this.x === other && this.y === other;
+    }
+
+    if (typeof other === "number" && typeof other2 === "number") {
+      return this.x === other && this.y === other2;
+    }
+
+    throw new TypeError("wrong types");
+  }
+
   public add(other: Vec2): Vec2;
   public add(val: number): Vec2;
   public add(x: number, y: number): Vec2;

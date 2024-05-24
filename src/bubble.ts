@@ -1,4 +1,4 @@
-import { BLACKHOLE_BUBBLE_COLOR, BUBBLE_DYING_DURATION, DEFAULT_BUBBLE_COLOR, GOLD_BUBBLE_COLOR, GOLD_BUBBLE_PROBABILITY, MOUSE_CLICK_COOLDOWN } from "./config";
+import * as cfg from "./config";
 import { Vec2, clamp, gaussianRandom, lerp } from "./math";
 import { BubbleColorCfg, Entity, Renderer } from "./renderer";
 
@@ -13,8 +13,22 @@ export function createBubble(
 
   const vel = new Vec2(0, clamp(gaussianRandom(150, 75), 15, null));
 
-  if (Math.random() < GOLD_BUBBLE_PROBABILITY) {
+  if (Math.random() < cfg.GOLD_BUBBLE_PROBABILITY) {
     return new GoldBubble(renderer, pos, radius, 99999, vel);
+  }
+
+  // A blackhole fills a lot of bubbles, increasing the spawn rate
+  // thus making spawning a new blackhole more probable
+  // so to avoid a vicious-cycle we half the probability for each already existing
+  // blackhole
+  let bh_brop = cfg.BLACKHOLE_BUBBLE_PROBABILITY;
+  for (const b of renderer.bubbles) {
+    if (b instanceof BlackholeBubble) {
+      bh_brop /= 2;
+    }
+  }
+  if (Math.random() < bh_brop) {
+    return new BlackholeBubble(renderer, pos, radius, 10, vel);
   }
 
   return new Bubble(renderer, pos, radius, 99999, vel);
@@ -41,7 +55,7 @@ export class Bubble implements Entity {
   protected opacity: number = 1;
   protected closest: number = 9999;
 
-  public colorCfg: BubbleColorCfg = DEFAULT_BUBBLE_COLOR;
+  public colorCfg: BubbleColorCfg = cfg.DEFAULT_BUBBLE_COLOR;
 
   public constructor(
     public readonly renderer: Renderer,
@@ -114,19 +128,15 @@ export class Bubble implements Entity {
   protected updateWallsCollisions() {
     if (this.pos.y + this.radius > this.renderer.canvas.height) {
       this.kill({type:"wall",dir:new Vec2(0,1)});
-      return;
     }
     if (this.pos.y - this.radius < 0) {
       this.kill({type:"wall",dir:new Vec2(0,-1)});
-      return;
     }
     if (this.pos.x + this.radius > this.renderer.canvas.width) {
       this.kill({type:"wall",dir:new Vec2(1,0)});
-      return;
     }
     if (this.pos.x - this.radius < 0) {
       this.kill({type:"wall",dir:new Vec2(-1,0)});
-      return;
     }
   }
 
@@ -147,7 +157,7 @@ export class Bubble implements Entity {
   protected updateMouseCollision() {
     if (this.renderer.mousePos === null)
       return;
-    if (this.renderer.timeSinceLastClick() < MOUSE_CLICK_COOLDOWN)
+    if (this.renderer.timeSinceLastClick() < cfg.MOUSE_CLICK_COOLDOWN)
       return;
     const mul = this.renderer.mouseSpeed?.norm() ?? 0;
 
@@ -176,7 +186,7 @@ export class Bubble implements Entity {
 
     if (this.isDying()) {
       this.interpolatedRadius += dt * 100;
-      this.opacity = Math.pow(this.remainingLife / BUBBLE_DYING_DURATION, 3);
+      this.opacity = Math.pow(this.remainingLife / cfg.BUBBLE_DYING_DURATION, 3);
       return;
     }
 
@@ -208,11 +218,13 @@ export class Bubble implements Entity {
   }
 
   public isDying(): boolean {
-    return this.remainingLife < BUBBLE_DYING_DURATION;
+    return this.remainingLife < cfg.BUBBLE_DYING_DURATION;
   }
 
   public kill(reason: KillReason) {
-    this.remainingLife = BUBBLE_DYING_DURATION;
+    if (this.isDying())
+      return;
+    this.remainingLife = cfg.BUBBLE_DYING_DURATION;
     if (reason.type === "bubble" || reason.type == "mouse")
       this.closest = 1;
   }
@@ -231,7 +243,7 @@ export class GoldBubble extends Bubble {
   ) {
     super(renderer, pos, radius, life, velocity);
 
-    this.colorCfg = GOLD_BUBBLE_COLOR;
+    this.colorCfg = cfg.GOLD_BUBBLE_COLOR;
   }
 
   public override get zindex() {
@@ -311,7 +323,8 @@ export class GoldBubble extends Bubble {
   }
 
   public override kill(reason: KillReason) {
-    if (reason.type === "bubble" && !(reason.bubble instanceof GoldBubble))
+    const can_kill = [GoldBubble, BlackholeBubble];
+    if (reason.type === "bubble" && !can_kill.some(class_ => reason.bubble instanceof class_))
       return;
 
     if (reason.type === "wall") {
@@ -322,6 +335,74 @@ export class GoldBubble extends Bubble {
     }
 
     if (reason.type === "mouse")
+      return;
+
+    super.kill(reason);
+  }
+}
+
+export class BlackholeBubble extends Bubble {
+  public pair: GoldBubble | null = null;
+
+  constructor(
+    renderer: Renderer,
+    
+    pos: Vec2,
+    radius: number,
+    life: number,
+    velocity: Vec2,
+  ) {
+    super(renderer, pos, radius, life, velocity);
+
+    this.targetVelocity = Vec2.ZERO;
+    this.colorCfg = cfg.BLACKHOLE_BUBBLE_COLOR;
+  }
+
+  public override get zindex() {
+    return super.zindex + 2;
+  }
+
+  protected override updateBubbleCollisions() {
+    this.closest = 0;
+    const dt = this.renderer.dt;
+
+    for (const bubble of this.renderer.bubbles) {
+      if (bubble === this)
+        continue;
+      if (bubble.isDying())
+        continue;
+      if (bubble instanceof BlackholeBubble)
+        continue;
+
+      const diff = this.pos.clone().sub(bubble.pos);
+      const dist = diff.norm();
+
+      const force = 20_000_000 / Math.pow(dist, 1.5);
+      const forceV = diff.clone().div(dist).mul(force);
+
+      bubble.velocity.add(forceV.mul(dt));
+    }
+  }
+
+  public override kill(reason: KillReason) {
+    if (reason.type === "mouse")
+      return;
+    if (reason.type === "wall") {
+      if (reason.dir.eq(0, 1)) {
+        this.pos.y = this.renderer.canvas.height - this.radius;
+      }
+      if (reason.dir.eq(0, -1)) {
+        this.pos.y = this.radius;
+      }
+      if (reason.dir.eq(1, 0)) {
+        this.pos.x = this.renderer.canvas.width - this.radius;
+      }
+      if (reason.dir.eq(-1, 0)) {
+        this.pos.x = this.radius;
+      }
+      return;
+    }
+    if (reason.type === "bubble")
       return;
 
     super.kill(reason);

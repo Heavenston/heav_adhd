@@ -1,4 +1,4 @@
-import { Bubble, createBubble, GoldBubble } from "./bubble";
+import { BlackholeBubble, Bubble, createBubble, GoldBubble } from "./bubble";
 import { BACKGROUND_COLOR } from "./config";
 import { ForceField } from "./force_field";
 import { Vec2 } from "./math";
@@ -151,8 +151,11 @@ export class Renderer {
     const golden = this.bubbles.reduce(
       (count, b) => count + +(!b.isDying() && b instanceof GoldBubble), 0
     );
+    const bh = this.bubbles.reduce(
+      (count, b) => count + +(!b.isDying() && b instanceof BlackholeBubble), 0
+    );
 
-    const text = `balls, count: ${count}${golden > 0 ? ` (${golden} golden)` : ""}, target: ${this.targetBubbleCount} (use scroll wheel)`;
+    const text = `balls, count: ${count}${golden > 0 ? ` (${golden} golden)` : ""}${bh> 0 ? ` (${bh} black hole${bh > 1 ? "s" : ""})` : ""}, target: ${this.targetBubbleCount} (use scroll wheel)`;
     const fontSize = 20;
     this.ctx.fillStyle = "white";
     this.ctx.font = `${fontSize}px sans`;
