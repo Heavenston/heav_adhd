@@ -492,7 +492,7 @@ export class Renderer {
         .mul(this.canvas.width - radius*2, this.canvas.height - radius*2)
         .add(radius);
 
-      const vel = new Vec2(0, clamp(gaussianRandom(150, 75), 5, null));
+      const vel = new Vec2(0, clamp(gaussianRandom(150, 75), 15, null));
       this.trySpawnBall(new Bubble(
         this,
 
