@@ -1,11 +1,6 @@
 import { Vec2, clamp, lerp } from "./math";
 import { UserError } from "./usererror";
 
-const BACKGROUND_COLOR = "#202020";
-const BUBBLE_DYING_DURATION = 0.5;
-const ENABLE_TOP_COLLISIONS = false;
-const MOUSE_CLICK_COOLDOWN = 2;
-
 interface Entity {
   update(): void;
   draw(): void;
@@ -13,16 +8,41 @@ interface Entity {
   isDead(): boolean;
 }
 
+type Color = readonly [number, number, number];
+
+type BubbleColorCfg = Readonly<{
+  default: Color,
+  close: Color,
+}>;
+
+const BACKGROUND_COLOR = "#202020";
+const BUBBLE_DYING_DURATION = 0.5;
+const MOUSE_CLICK_COOLDOWN = 2;
+
+const GOLD_BUBBLE_PROBABILITY = 0.5 / 100;
+
+const DEFAULT_BUBBLE_COLOR: BubbleColorCfg = {
+  default: Object.freeze([100, 136, 234] as const),
+  close: Object.freeze([255, 0, 0] as const),
+};
+const GOLD_BUBBLE_COLOR: BubbleColorCfg = {
+  default: Object.freeze([236, 189, 0] as const),
+  close: Object.freeze([236, 118, 0] as const),
+};
+
 class Bubble implements Entity {
   public pos: Vec2;
   private life: number;
   private velocity: Vec2 = Vec2.ZERO;
-  private readonly targetVelocity: Readonly<Vec2>;
+  private targetVelocity: Vec2;
   private interpolatedRadius: number = 0;
   private readonly targetRadius: number;
 
   private opacity: number = 1;
   private closest: number = 9999;
+
+  public isGolden: boolean = false;
+  public colorCfg: BubbleColorCfg = DEFAULT_BUBBLE_COLOR;
 
   public constructor(
     public readonly renderer: Renderer,
@@ -36,7 +56,12 @@ class Bubble implements Entity {
     this.targetRadius = radius;
     this.life = life;
     this.targetVelocity = velocity;
-  };
+
+    if (Math.random() < GOLD_BUBBLE_PROBABILITY) {
+      this.isGolden = true;
+      this.colorCfg = GOLD_BUBBLE_COLOR;
+    }
+  }
 
   get maxRadius(): number {
     return this.targetRadius;
@@ -51,8 +76,8 @@ class Bubble implements Entity {
   }
 
   get color(): string {
-    const normal = [100, 136, 234];
-    const close = [255, 0, 0];
+    const normal = this.colorCfg.default;
+    const close = this.colorCfg.close;
     const closest = clamp(this.closest, 0, 1);
     const choice = [
       normal[0] * (1 - closest) + close[0] * closest,
@@ -103,20 +128,42 @@ class Bubble implements Entity {
     this.pos.add(this.velocity.clone().mul(dt));
 
     if (this.pos.y + this.radius > this.renderer.canvas.height) {
-      this.kill();
-      return;
+      if (this.isGolden) {
+        if (this.targetVelocity.y > 0)
+          this.targetVelocity.y *= -1;
+      }
+      else {
+        this.kill();
+        return;
+      }
     }
-    if (this.pos.y - this.radius < 0 && ENABLE_TOP_COLLISIONS) {
-      this.kill();
-      return;
+    if (this.pos.y - this.radius < 0) {
+      if (this.isGolden) {
+        if (this.targetVelocity.y < 0)
+          this.targetVelocity.y *= -1;
+      }
+      else {
+        this.kill();
+        return;
+      }
     }
     if (this.pos.x + this.radius > this.renderer.canvas.width) {
-      this.kill();
-      return;
+      if (this.isGolden) {
+        this.pos.x = this.renderer.canvas.width - this.radius;
+      }
+      else {
+        this.kill();
+        return;
+      }
     }
     if (this.pos.x - this.radius < 0) {
-      this.kill();
-      return;
+      if (this.isGolden) {
+        this.pos.x = this.radius;
+      }
+      else {
+        this.kill();
+        return;
+      }
     }
 
     this.closest = 0;
@@ -125,8 +172,11 @@ class Bubble implements Entity {
         continue;
       const diff = this.pos.clone().sub(bubble.pos);
       if (this.objectAt(diff, bubble.radius, 0)) {
-        bubble.kill(true);
-        this.kill(true);
+        const both = bubble.isGolden && this.isGolden;
+        if (!bubble.isGolden || both)
+          bubble.kill(true);
+        if (!this.isGolden || both)
+          this.kill(true);
       }
     }
 
@@ -136,7 +186,7 @@ class Bubble implements Entity {
         this.pos.clone().sub(this.renderer.mousePos),
         10, 50,
         clamp(mul, 10, 500),
-      )) {
+      ) && !this.isGolden) {
         this.kill(true);
       }
     }
@@ -430,7 +480,8 @@ export class Renderer {
       ff.draw();
     }
 
-    const text = `balls, count: ${this.bubbles.length}, target: ${this.targetBubbleCount} (use scroll wheel)`;
+    const golden = this.bubbles.filter(b => b.isGolden).length;
+    const text = `balls, count: ${this.bubbles.length}${golden > 0 ? ` (${golden} golden)` : ""}, target: ${this.targetBubbleCount} (use scroll wheel)`;
     const fontSize = 20;
     this.ctx.fillStyle = "white";
     this.ctx.font = `${fontSize}px sans`;
