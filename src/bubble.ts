@@ -331,6 +331,12 @@ export class GoldBubble extends Bubble {
       if (reason.dir.x === 0) {
         this.targetVelocity.y = Math.abs(this.targetVelocity.y) * Math.sign(-reason.dir.y);
       }
+      if (reason.dir.eq(1, 0)) {
+        this.pos.x = this.renderer.canvas.width - this.radius;
+      }
+      if (reason.dir.eq(-1, 0)) {
+        this.pos.x = this.radius;
+      }
       return;
     }
 
