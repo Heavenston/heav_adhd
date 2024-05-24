@@ -50,7 +50,7 @@ export class Bubble implements Entity {
   public velocity: Vec2 = Vec2.ZERO;
   protected targetVelocity: Vec2;
   protected interpolatedRadius: number = 0;
-  protected readonly targetRadius: number;
+  protected targetRadius: number;
 
   protected opacity: number = 1;
   protected closest: number = 9999;
@@ -408,8 +408,10 @@ export class BlackholeBubble extends Bubble {
       }
       return;
     }
-    if (reason.type === "bubble")
+    if (reason.type === "bubble") {
+      this.targetRadius += 1;
       return;
+    }
 
     super.kill(reason);
   }
