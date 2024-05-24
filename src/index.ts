@@ -1,3 +1,4 @@
+import { clamp } from "./math";
 import { Renderer } from "./renderer";
 import { UserError } from "./usererror";
 
@@ -17,7 +18,7 @@ function init() {
     try {
       time /= 1000;
 
-      renderer.update(time - lastT);
+      renderer.update(clamp(time - lastT, 0, 0.5));
       lastT = time;
 
       if (animationFrame != null)
