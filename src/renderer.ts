@@ -3,6 +3,7 @@ import { UserError } from "./usererror";
 
 const BACKGROUND_COLOR = "#202020";
 const BUBBLE_DYING_DURATION = 0.5;
+const ENABLE_TOP_COLLISIONS = false;
 
 class Bubble {
   public pos: Vec2;
@@ -95,6 +96,19 @@ class Bubble {
 
     if (this.pos.y + this.radius > this.renderer.canvas.height) {
       this.kill();
+      return;
+    }
+    if (this.pos.y - this.radius < 0 && ENABLE_TOP_COLLISIONS) {
+      this.kill();
+      return;
+    }
+    if (this.pos.x + this.radius > this.renderer.canvas.width) {
+      this.kill();
+      return;
+    }
+    if (this.pos.x - this.radius < 0) {
+      this.kill();
+      return;
     }
 
     this.closest = 0;
@@ -189,11 +203,16 @@ export class Renderer {
     let max_try = 5;
     while (max_try > 0 && this.bubbles.length < this.targetBubbleCount) {
       max_try -= 1;
+
+      const radius = Math.random() * 20 + 20;
+      // Use radius to prevent touching the sides
+      const pos = Vec2.random()
+        .mul(this.canvas.width - radius*2, this.canvas.height - radius*2)
+        .add(radius);
       this.trySpawnBall(new Bubble(
         this,
 
-        Vec2.random().mul(this.canvas.width, this.canvas.height),
-        Math.random() * 20 + 20,
+        pos, radius,
 
         // Math.random() * 1 + 10 - delta,
         9999,
