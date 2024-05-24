@@ -179,6 +179,7 @@ class ForceField implements Entity {
   private started = false;
   public age = 0;
   #force = 100;
+  private particles: {pos: Vec2, vel: Vec2}[] = [];
 
   constructor(
     public readonly renderer: Renderer,
@@ -207,8 +208,31 @@ class ForceField implements Entity {
   public update(): void {
     if (this.isDead())
       return;
-    if (!this.started)
+    if (!this.started) {
+      const angle = Math.random() * Math.PI * 2;
+      this.particles.push({
+        pos: this.pos.clone().add(Vec2.rotated(angle).mul(this.force - 50)),
+        vel: Vec2.ZERO,
+      });
+
+      const toRemove = [];
+      for (const particle of this.particles) {
+        const diff = particle.pos.clone().sub(this.pos);
+        const dist = diff.norm();
+        if (dist < 5) {
+          toRemove.push(particle);
+        }
+        const speed = Math.pow((dist / 10 + 18), 1.75);
+        particle.vel = diff.div(dist).mul(speed);
+        particle.pos.sub(particle.vel.clone().mul(this.renderer.dt));
+      }
+      for (const tr of toRemove) {
+        this.particles.splice(this.particles.indexOf(tr), 1);
+      }
+
       return;
+    }
+    this.particles = [];
     this.age += this.renderer.dt;
   }
 
@@ -230,10 +254,19 @@ class ForceField implements Entity {
   }
 
   public draw(): void {
+    const ctx = this.renderer.ctx;
     if (!this.started) {
+      ctx.strokeStyle = "white";
+      ctx.lineWidth = 5;
+      ctx.lineCap = "round";
+      for (const particle of this.particles) {
+        ctx.beginPath();
+        ctx.moveTo(particle.pos.x, particle.pos.y);
+        ctx.lineTo(particle.pos.x + particle.vel.x / 25, particle.pos.y + particle.vel.y / 25);
+        ctx.stroke();
+      }
       return;
     }
-    const ctx = this.renderer.ctx;
     ctx.fillStyle = this.color;
     ctx.beginPath();
     ctx.arc(
@@ -390,11 +423,11 @@ export class Renderer {
     this.ctx.fillStyle = BACKGROUND_COLOR;
     this.ctx.fillRect(0,0,this.canvas.width,this.canvas.height);
 
-    for (const ff of this.forceFields) {
-      ff.draw();
-    }
     for (const bubble of this.bubbles) {
       bubble.draw();
+    }
+    for (const ff of this.forceFields) {
+      ff.draw();
     }
 
     const text = `balls, count: ${this.bubbles.length}, target: ${this.targetBubbleCount} (use scroll wheel)`;
