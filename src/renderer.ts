@@ -4,8 +4,16 @@ import { UserError } from "./usererror";
 const BACKGROUND_COLOR = "#202020";
 const BUBBLE_DYING_DURATION = 0.5;
 const ENABLE_TOP_COLLISIONS = false;
+const MOUSE_CLICK_COOLDOWN = 2;
 
-class Bubble {
+interface Entity {
+  update(): void;
+  draw(): void;
+
+  isDead(): boolean;
+}
+
+class Bubble implements Entity {
   public pos: Vec2;
   private life: number;
   private velocity: Vec2 = Vec2.ZERO;
@@ -122,7 +130,7 @@ class Bubble {
       }
     }
 
-    if (this.renderer.mousePos !== null) {
+    if (this.renderer.mousePos !== null && this.renderer.timeSinceLastClick() > MOUSE_CLICK_COOLDOWN) {
       const mul = this.renderer.mouseSpeed?.norm() ?? 0;
       if (this.objectAt(
         this.pos.clone().sub(this.renderer.mousePos),
@@ -132,6 +140,23 @@ class Bubble {
         this.kill(true);
       }
     }
+
+    for (const ff of this.renderer.forceFields) {
+      this.velocity.add(ff.getForceOn(this).div(dt));
+    }
+  }
+
+  public draw() {
+    const ctx = this.renderer.ctx;
+    ctx.fillStyle = this.color;
+    ctx.beginPath();
+    ctx.arc(
+      this.pos.x,
+      this.pos.y,
+      this.radius,
+      0, Math.PI * 2,
+    );
+    ctx.fill();
   }
 
   public isDead(): boolean {
@@ -150,6 +175,95 @@ class Bubble {
   }
 }
 
+class ForceField implements Entity {
+  private started = false;
+  public age = 0;
+  #force = 100;
+
+  constructor(
+    public readonly renderer: Renderer,
+    public pos: Vec2,
+  ){}
+
+  public start() {
+    this.started = true;
+  }
+
+  public get force(): number {
+    return this.#force;
+  }
+
+  public set force(n: number) {
+    if (this.started) {
+      throw new Error("Cannot change force after started");
+    }
+    this.#force = n;
+  }
+
+  public isDead(): boolean {
+    return this.age > this.duration;
+  }
+
+  public update(): void {
+    if (this.isDead())
+      return;
+    if (!this.started)
+      return;
+    this.age += this.renderer.dt;
+  }
+
+  public get duration(): number {
+    return 20 * Math.pow(this.force, -0.8);
+  }
+
+  public get radius(): number {
+    return (1 - this.opacity) * this.force;
+  }
+
+  public get opacity(): number {
+    const age_fact = this.age / this.duration;
+    return 1 - age_fact;
+  }
+
+  public get color(): string {
+    return `rgba(255,255,255,${this.opacity})`;
+  }
+
+  public draw(): void {
+    if (!this.started) {
+      return;
+    }
+    const ctx = this.renderer.ctx;
+    ctx.fillStyle = this.color;
+    ctx.beginPath();
+    ctx.arc(
+      this.pos.x,
+      this.pos.y,
+      this.radius,
+      0, Math.PI * 2,
+    );
+    ctx.fill();
+  }
+
+  public getForceOn(bubble: Bubble): Vec2 {
+    if (!this.started)
+      return Vec2.ZERO;
+    const diff = bubble.pos.clone().sub(this.pos);
+    const dist = diff.norm();
+    const normalized_dist = clamp(dist - bubble.radius - this.radius, 0, null);
+    if (normalized_dist > 1) {
+      return Vec2.ZERO;
+    }
+
+    return diff.clone().div(dist).mul((1 - normalized_dist) * 20 * this.opacity);
+  }
+}
+
+type EventClick = {
+  time: number,
+  pos: Vec2,
+};
+
 export class Renderer {
   public canvas: HTMLCanvasElement;
   public ctx: CanvasRenderingContext2D;
@@ -157,10 +271,16 @@ export class Renderer {
   public totalTime: number = 0;
   public dt: number = 0;
   public bubbles: Bubble[] = [];
+  public forceFields: ForceField[] = [];
 
   private mouseLastPos: Vec2 | null = null;
   public mousePos: Vec2 | null = null;
   public mouseSpeed: Vec2 | null = null;
+
+  public lastMouseDown: EventClick | null = null;
+  public lastMouseUp: EventClick | null = null;
+
+  public currentForceField: ForceField | null = null;
 
   public targetBubbleCount: number = 40;
 
@@ -188,6 +308,46 @@ export class Renderer {
         this.targetBubbleCount += 1;
       }
     });
+
+    this.canvas.addEventListener("mousedown", () => {
+      if (this.mousePos === null)
+        return;
+      this.lastMouseDown = {
+        pos: this.mousePos.clone(),
+        time: this.totalTime,
+      };
+    });
+
+    this.canvas.addEventListener("mouseup", () => {
+      if (this.mousePos === null)
+        return;
+      this.lastMouseUp = {
+        pos: this.mousePos.clone(),
+        time: this.totalTime,
+      };
+    });
+  }
+
+  public isClicking(): boolean {
+    if (this.lastMouseDown === null)
+      return false;
+    if (this.lastMouseUp && this.lastMouseUp.time > this.lastMouseDown.time)
+      return false;
+    return true;
+  }
+
+  public lastClickDuration(): number {
+    if (this.lastMouseDown === null)
+      return 0;
+    return (this.lastMouseUp?.time ?? this.totalTime) - this.lastMouseDown.time;
+  }
+
+  public timeSinceLastClick(): number {
+    if (this.lastMouseDown === null)
+      return this.totalTime;
+    if (this.isClicking())
+      return 0;
+    return this.totalTime - (this.lastMouseUp?.time ?? this.totalTime);
   }
 
   private trySpawnBall(ball: Bubble): boolean {
@@ -230,16 +390,11 @@ export class Renderer {
     this.ctx.fillStyle = BACKGROUND_COLOR;
     this.ctx.fillRect(0,0,this.canvas.width,this.canvas.height);
 
+    for (const ff of this.forceFields) {
+      ff.draw();
+    }
     for (const bubble of this.bubbles) {
-      this.ctx.fillStyle = bubble.color;
-      this.ctx.beginPath();
-      this.ctx.arc(
-        bubble.pos.x,
-        bubble.pos.y,
-        bubble.radius,
-        0, Math.PI * 2,
-      );
-      this.ctx.fill();
+      bubble.draw();
     }
 
     const text = `balls, count: ${this.bubbles.length}, target: ${this.targetBubbleCount} (use scroll wheel)`;
@@ -247,6 +402,20 @@ export class Renderer {
     this.ctx.fillStyle = "white";
     this.ctx.font = `${fontSize}px sans`;
     this.ctx.fillText(text, 5, 5 + fontSize);
+  }
+
+  private updateEntities(entities: Entity[]) {
+    const toRemove = [];
+    for (const entity of entities) {
+      entity.update();
+      if (entity.isDead()) {
+        toRemove.push(entity);
+        continue;
+      }
+    }
+    for (const byby of toRemove) {
+      entities.splice(entities.indexOf(byby), 1);
+    }
   }
 
   public update(dt: number) {
@@ -260,18 +429,23 @@ export class Renderer {
       this.mouseSpeed = null;
     }
 
-    const toRemove = [];
-    for (const bubble of this.bubbles) {
-      bubble.update();
-      if (bubble.isDead()) {
-        toRemove.push(bubble);
-        continue;
+    if (this.isClicking()) {
+      if (this.currentForceField === null) {
+        this.currentForceField = new ForceField(this, Vec2.ZERO);
+        this.forceFields.push(this.currentForceField);
       }
+
+      this.currentForceField.pos = this.mouseLastPos ?? Vec2.ZERO;
+      this.currentForceField.force += dt * 50;
     }
-    for (const byby of toRemove) {
-      this.bubbles.splice(this.bubbles.indexOf(byby), 1);
+    if (!this.isClicking() && this.currentForceField !== null) {
+      this.currentForceField.start();
+      this.currentForceField = null;
     }
+
+    this.updateEntities(this.bubbles);
     this.spawnBalls();
+    this.updateEntities(this.forceFields);
 
     this.draw();
 

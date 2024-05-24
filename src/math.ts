@@ -25,7 +25,7 @@ export class Vec2 {
     return new Vec2(Math.random(), Math.random());
   }
 
-  public static ZERO: Vec2 = Vec2.splat(0);
+  public static ZERO: Readonly<Vec2> = Vec2.splat(0);
 
   public clone(): Vec2 {
     return new Vec2(this.x, this.y);
