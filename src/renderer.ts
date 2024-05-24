@@ -185,7 +185,7 @@ class Bubble implements Entity {
       foundPair = foundPair || (bubble === this.goldPair);
 
       const diff = this.pos.clone().sub(bubble.pos);
-      if (this.objectAt(diff, bubble.radius, 0, bubble === this.goldPair ? 0 : undefined)) {
+      if (this.objectAt(diff, bubble.radius, bubble.forceRadius, bubble === this.goldPair ? 0 : undefined)) {
         const both = bubble.isGolden && this.isGolden;
         if (!bubble.isGolden || both)
           bubble.kill(true);
