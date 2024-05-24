@@ -234,7 +234,6 @@ class Bubble implements Entity {
     if (this.goldPair !== null) {
       const target = this.pos.clone().sub(this.goldPair.pos).mul(0.5).add(this.goldPair.pos);
 
-      console.log("gold");
       ctx.strokeStyle = this.color;
       ctx.lineCap = "round";
       ctx.lineWidth = 5;
