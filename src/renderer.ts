@@ -74,7 +74,10 @@ class Bubble implements Entity {
   }
 
   get forceRadius(): number {
-    return this.radius / 2;
+    let fr = this.radius / 2;
+    if (this.isGolden)
+      fr *= 3;
+    return fr;
   }
 
   get color(): string {
