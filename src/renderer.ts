@@ -1,4 +1,4 @@
-import { Vec2, clamp, lerp } from "./math";
+import { Vec2, clamp, gaussianRandom, lerp } from "./math";
 import { UserError } from "./usererror";
 
 interface Entity {
@@ -295,8 +295,9 @@ class ForceField implements Entity {
       return;
     if (!this.started) {
       const angle = Math.random() * Math.PI * 2;
+      const distance = gaussianRandom(this.force - 50, 1);
       this.particles.push({
-        pos: this.pos.clone().add(Vec2.rotated(angle).mul(this.force - 50)),
+        pos: this.pos.clone().add(Vec2.rotated(angle).mul(distance)),
         vel: Vec2.ZERO,
       });
 
@@ -485,11 +486,13 @@ export class Renderer {
     while (max_try > 0 && this.bubbles.length < this.targetBubbleCount) {
       max_try -= 1;
 
-      const radius = Math.random() * 20 + 20;
+      const radius = gaussianRandom(30, 5);
       // Use radius to prevent touching the sides
       const pos = Vec2.random()
         .mul(this.canvas.width - radius*2, this.canvas.height - radius*2)
         .add(radius);
+
+      const vel = new Vec2(0, clamp(gaussianRandom(150, 75), 5, null));
       this.trySpawnBall(new Bubble(
         this,
 
@@ -498,7 +501,7 @@ export class Renderer {
         // Math.random() * 1 + 10 - delta,
         9999,
 
-        new Vec2(0, Math.random() * 150 + 50),
+        vel,
       ));
     }
   }
