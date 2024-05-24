@@ -27,7 +27,7 @@ const DEFAULT_BUBBLE_COLOR: BubbleColorCfg = {
 };
 const GOLD_BUBBLE_COLOR: BubbleColorCfg = {
   default: Object.freeze([236, 189, 0] as const),
-  close: Object.freeze([236, 45, 0] as const),
+  close: Object.freeze([236, 80, 0] as const),
 };
 
 class Bubble implements Entity {
