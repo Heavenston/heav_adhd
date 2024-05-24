@@ -5,7 +5,7 @@ export const BUBBLE_DYING_DURATION = 0.5;
 export const MOUSE_CLICK_COOLDOWN = 2;
 
 export const GOLD_BUBBLE_PROBABILITY = 0.01;
-export const BLACKHOLE_BUBBLE_PROBABILITY = 0.0025;
+export const BLACKHOLE_BUBBLE_PROBABILITY = 0.001;
 
 export const DEFAULT_BUBBLE_COLOR: BubbleColorCfg = {
   default: Object.freeze([100, 136, 234] as const),
