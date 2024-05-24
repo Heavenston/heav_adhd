@@ -31,6 +31,16 @@ export class Vec2 {
     return new Vec2(this.x, this.y);
   }
 
+  public with_x(val: number): Vec2 {
+    this.x = val;
+    return this;
+  }
+
+  public with_y(val: number): Vec2 {
+    this.y = val;
+    return this;
+  }
+
   public add(other: Vec2): Vec2;
   public add(val: number): Vec2;
   public add(x: number, y: number): Vec2;

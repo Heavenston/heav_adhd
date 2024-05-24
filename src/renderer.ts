@@ -117,8 +117,8 @@ class Bubble {
         continue;
       const diff = this.pos.clone().sub(bubble.pos);
       if (this.objectAt(diff, bubble.radius, 0)) {
-        bubble.kill();
-        this.kill();
+        bubble.kill(true);
+        this.kill(true);
       }
     }
 
@@ -129,7 +129,7 @@ class Bubble {
         10, 50,
         clamp(mul, 10, 500),
       )) {
-        this.kill();
+        this.kill(true);
       }
     }
   }
@@ -142,8 +142,11 @@ class Bubble {
     return this.life < BUBBLE_DYING_DURATION;
   }
 
-  public kill() {
+  public kill(color: boolean = false) {
     this.life = BUBBLE_DYING_DURATION;
+    if (color) {
+      this.closest = 1;
+    }
   }
 }
 
