@@ -591,15 +591,23 @@ export class VirusBubble extends Bubble {
     if (reason.type === "wall") {
       if (reason.dir.eq(0, 1)) {
         this.pos.y = this.renderer.canvas.height - this.radius;
+        if (this.velocity.y > 0)
+          this.velocity.y = 0;
       }
       if (reason.dir.eq(0, -1)) {
         this.pos.y = this.radius;
+        if (this.velocity.y < 0)
+          this.velocity.y = 0;
       }
       if (reason.dir.eq(1, 0)) {
         this.pos.x = this.renderer.canvas.width - this.radius;
+        if (this.velocity.x > 0)
+          this.velocity.x = 0;
       }
       if (reason.dir.eq(-1, 0)) {
         this.pos.x = this.radius;
+        if (this.velocity.x < 0)
+          this.velocity.x = 0;
       }
       return;
     }
