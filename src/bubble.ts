@@ -105,7 +105,7 @@ export class Bubble implements Entity {
     diff: Vec2,
     size: number,
     forceSize: number,
-    forceMultiplier: number = 10,
+    forceMultiplier: number,
   ): boolean {
     const distance = diff.norm();
     const contact_distance = distance - (this.radius + size);
@@ -140,6 +140,10 @@ export class Bubble implements Entity {
     }
   }
 
+  protected forceMultiplierWith(_other: Bubble): number {
+    return 10;
+  }
+
   protected updateBubbleCollisions() {
     this.closest = 0;
     for (const bubble of this.renderer.bubbles) {
@@ -147,7 +151,7 @@ export class Bubble implements Entity {
         continue;
 
       const diff = this.pos.clone().sub(bubble.pos);
-      if (this.objectAt(diff, bubble.radius, bubble.forceRadius)) {
+      if (this.objectAt(diff, bubble.radius, bubble.forceRadius, this.forceMultiplierWith(bubble))) {
         bubble.kill({type:"bubble",bubble:this});
         this.kill({type:"bubble",bubble});
       }
@@ -266,19 +270,10 @@ export class GoldBubble extends Bubble {
     }
   }
 
-  protected override updateBubbleCollisions() {
-    this.closest = 0;
-    for (const bubble of this.renderer.bubbles) {
-      if (bubble === this || bubble.isDying())
-        continue;
-
-      const diff = this.pos.clone().sub(bubble.pos);
-      if (this.objectAt(diff, bubble.radius, bubble.forceRadius, this.pair === bubble ? 0 : undefined)) {
-        bubble.kill({type:"bubble",bubble:this});
-        // ignored if required
-        this.kill({type:"bubble",bubble});
-      }
-    }
+  protected override forceMultiplierWith(other: Bubble): number {
+    if (other === this.pair)
+      return 0;
+    return super.forceMultiplierWith(other);
   }
 
   public override update() {
