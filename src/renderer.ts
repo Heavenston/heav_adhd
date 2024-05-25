@@ -53,13 +53,17 @@ export class Renderer {
     this.ctx = ctx;
 
     this.canvas.addEventListener("mousemove", e => {
+      console.log("move");
       this.mousePos = new Vec2(e.clientX, e.clientY);
+      console.log(this.mouseLastPos);
     });
     this.canvas.addEventListener("mouseleave", () => {
+      console.log("leave");
       this.mousePos = null;
     });
 
     this.canvas.addEventListener("wheel", e => {
+      console.log("wheel");
       if (e.deltaY > 0) {
         this.targetBubbleCount -= 1;
         if (this.targetBubbleCount < 1)
@@ -68,9 +72,10 @@ export class Renderer {
       else if (e.deltaY < 1) {
         this.targetBubbleCount += 1;
       }
-    });
+    }, { passive: true });
 
     this.canvas.addEventListener("mousedown", () => {
+      console.log("down");
       if (this.mousePos === null)
         return;
       this.lastMouseDown = {
@@ -80,6 +85,7 @@ export class Renderer {
     });
 
     this.canvas.addEventListener("mouseup", () => {
+      console.log("up");
       if (this.mousePos === null)
         return;
       this.lastMouseUp = {
@@ -87,6 +93,56 @@ export class Renderer {
         time: this.totalTime,
       };
     });
+
+    this.canvas.addEventListener("touchstart", t => {
+      t.preventDefault();
+
+      if (t.targetTouches.length === 1) {
+        const touch = t.touches[0];
+        this.mousePos = new Vec2(touch.clientX, touch.clientY);
+      }
+      if (t.targetTouches.length === 2) {
+        const touchA = t.touches[0];
+        const touchB = t.touches[1];
+        const a = new Vec2(touchA.clientX, touchA.clientY);
+        const b = new Vec2(touchB.clientX, touchB.clientY);
+        this.mousePos = a.lerp(b, 0.5);
+        this.lastMouseDown = { pos: this.mousePos.clone(), time: this.totalTime };
+      }
+    }, { passive: false });
+    this.canvas.addEventListener("touchend", t => {
+      t.preventDefault();
+
+      if (t.targetTouches.length === 0) {
+        if (this.mousePos !== null && this.isClicking()) {
+          this.lastMouseUp = { pos: this.mousePos.clone(), time: this.totalTime };
+        }
+        this.mousePos = null;
+      }
+      if (t.targetTouches.length === 1) {
+        if (this.mousePos !== null && this.isClicking()) {
+          this.lastMouseUp = { pos: this.mousePos.clone(), time: this.totalTime };
+        }
+        this.mousePos = new Vec2(t.touches[0].clientX, t.touches[0].clientY);
+      }
+
+    }, { passive: false });
+    this.canvas.addEventListener("touchmove", t => {
+      t.preventDefault();
+
+      if (t.targetTouches.length === 1) {
+        const touch = t.touches[0];
+        this.mousePos = new Vec2(touch.clientX, touch.clientY);
+      }
+      if (t.targetTouches.length === 2) {
+        const touchA = t.touches[0];
+        const touchB = t.touches[1];
+        const a = new Vec2(touchA.clientX, touchA.clientY);
+        const b = new Vec2(touchB.clientX, touchB.clientY);
+        this.mousePos = a.lerp(b, 0.5);
+      }
+
+    }, { passive: false });
   }
 
   public isClicking(): boolean {
@@ -193,7 +249,8 @@ export class Renderer {
         this.forceFields.push(this.currentForceField);
       }
 
-      this.currentForceField.pos = this.mouseLastPos ?? Vec2.ZERO;
+      if (this.mousePos !== null)
+        this.currentForceField.pos = this.mousePos;
       this.currentForceField.force += dt * 50;
     }
     if (!this.isClicking() && this.currentForceField !== null) {
