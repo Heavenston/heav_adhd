@@ -200,17 +200,27 @@ export class Renderer {
       ent.draw();
     }
 
-    const count = this.bubbles.reduce(
-      (count, b) => count + +!b.isDying(), 0
-    );
-    const golden = this.bubbles.reduce(
-      (count, b) => count + +(!b.isDying() && b instanceof GoldBubble), 0
-    );
-    const bh = this.bubbles.reduce(
-      (count, b) => count + +(!b.isDying() && b instanceof BlackholeBubble), 0
-    );
+    let text = "balls, count: ";
 
-    const text = `balls, count: ${count}${golden > 0 ? ` (${golden} golden)` : ""}${bh> 0 ? ` (${bh} black hole${bh > 1 ? "s" : ""})` : ""}, target: ${this.targetBubbleCount} (use scroll wheel)`;
+    const counts = this.bubbles.reduce(
+      (counts, b) => {
+        if (b.isDying())
+          return counts;
+        if (counts[b.displayName])
+          counts[b.displayName] += 1;
+        else 
+          counts[b.displayName] = 1;
+        return counts;
+      }, {} as {[key: string]: number}
+    );
+    text += Object.values(counts).reduce((a, b) => a + b) ?? 0;
+    for (const key of Object.keys(counts)) {
+      if (key === "bubble")
+        continue;
+      text += ` (${counts[key]} ${key})`
+    }
+
+    text += `, target: ${this.targetBubbleCount} (use scroll wheel)`;
     const fontSize = 20;
     this.ctx.fillStyle = "white";
     this.ctx.font = `${fontSize}px sans`;

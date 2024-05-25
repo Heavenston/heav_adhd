@@ -76,6 +76,10 @@ export class Bubble implements Entity {
     this.targetVelocity = velocity;
   }
 
+  public get displayName(): string {
+    return "bubble";
+  }
+
   get zindex(): number {
     return 0;
   }
@@ -283,6 +287,10 @@ export class SquareBubble extends Bubble {
     );
   }
 
+  public override get displayName(): string {
+    return "square";
+  }
+
   public minPos(): Vec2 {
     return new Vec2(
       this.pos.x - this.radius,
@@ -326,6 +334,10 @@ export class GoldBubble extends Bubble {
     super(renderer, pos, radius, life, velocity);
 
     this.colorCfg = cfg.GOLD_BUBBLE_COLOR;
+  }
+
+  public override get displayName(): string {
+    return "golden";
   }
 
   public override get zindex() {
@@ -437,6 +449,10 @@ export class BlackholeBubble extends Bubble {
     this.colorCfg = cfg.BLACKHOLE_BUBBLE_COLOR;
   }
 
+  public override get displayName(): string {
+    return "black hole";
+  }
+
   public override get zindex() {
     return super.zindex + 2;
   }
@@ -507,6 +523,10 @@ export class VirusBubble extends Bubble {
 
     this.targetVelocity = Vec2.ZERO;
     this.colorCfg = cfg.VIRUS_BUBBLE_COLOR;
+  }
+
+  public override get displayName(): string {
+    return "virus";
   }
 
   protected override forceMultiplierWith(_other: Bubble): number {
@@ -609,6 +629,10 @@ export class AntiVirusBubble extends Bubble {
     this.colorCfg = cfg.ANTIVIRUS_BUBBLE_COLOR;
 
     this.lastRay = renderer.totalTime;
+  }
+
+  public override get displayName(): string {
+    return "antivirus";
   }
 
   protected override forceMultiplierWith(_other: Bubble): number {
