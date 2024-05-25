@@ -454,6 +454,8 @@ export class VirusBubble extends Bubble {
         continue;
       if (bubble === this)
         continue;
+      if (bubble instanceof BlackholeBubble)
+        continue;
 
       const value = -bubble.velocity.norm2();
       if (value > targetValue) {
