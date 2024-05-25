@@ -13,6 +13,10 @@ export function createBubble(
 
   const vel = new Vec2(0, clamp(gaussianRandom(150, 75), 15, null));
 
+  if (Math.random() < cfg.SQUARE_BUBBLE_PROBABILITY) {
+    return new SquareBubble(renderer, pos, radius, 99999, vel);
+  }
+
   if (Math.random() < cfg.GOLD_BUBBLE_PROBABILITY) {
     return new GoldBubble(renderer, pos, radius, 99999, vel);
   }
@@ -101,26 +105,43 @@ export class Bubble implements Entity {
     return `rgba(${choice.map(Math.round).join(",")},${this.opacity})`;
   }
 
+  /// 0 if pos is at the surface or inside, 1 if 1 pixel from surface
+  public distanceFromSurface(pos: Vec2): number {
+    return clamp(this.pos.clone().sub(pos).norm() - this.radius, 0, null);
+  }
+
+  public gapBetween(other: Bubble): number {
+    const diff = other.pos.clone().sub(this.pos);
+    const dist = diff.norm();
+    const dir = diff.clone().div(dist);
+
+    const a = other.distanceFromSurface(this.pos);
+    if (a <= 0)
+      return 0;
+
+    const possibleContactPoint = this.pos.clone()
+      .add(dir.clone().mul(a));
+
+    return this.distanceFromSurface(possibleContactPoint);
+  }
+
   /// Apply velocities based on a close object
-  protected objectAt(
-    diff: Vec2,
-    size: number,
-    forceSize: number,
+  protected applyObjectForce(
+    dir: Vec2,
+    gap: number,
+    forceRadius: number,
     forceMultiplier: number,
   ): boolean {
-    const distance = diff.norm();
-    const contact_distance = distance - (this.radius + size);
-
-    if (contact_distance < 0)
+    if (gap <= 0)
       return true;
 
-    const forceRadius = this.forceRadius + forceSize;
+    const sumedForceRadius = this.forceRadius + forceRadius;
 
-    if (contact_distance < forceRadius) {
-      const closness = 1 - contact_distance / forceRadius;
+    if (gap < sumedForceRadius) {
+      const closness = 1 - gap / sumedForceRadius;
       this.closest = Math.max(closness, this.closest);
       let force = Math.pow(closness, 2) * forceMultiplier;
-      this.velocity.add(diff.clone().div(distance).mul(force));
+      this.velocity.add(dir.clone().mul(force));
     }
 
     return false;
@@ -152,7 +173,12 @@ export class Bubble implements Entity {
         continue;
 
       const diff = this.pos.clone().sub(bubble.pos);
-      if (this.objectAt(diff, bubble.radius, bubble.forceRadius, this.forceMultiplierWith(bubble))) {
+      const dist = diff.norm();
+      const dir = diff.clone().div(dist);
+
+      const gap = this.gapBetween(bubble);
+
+      if (this.applyObjectForce(dir, gap, bubble.forceRadius, this.forceMultiplierWith(bubble))) {
         bubble.kill({type:"bubble",bubble:this});
         this.kill({type:"bubble",bubble});
       }
@@ -166,10 +192,12 @@ export class Bubble implements Entity {
       return;
     const mul = this.renderer.mouseSpeed?.norm() ?? 0;
 
-    if (this.objectAt(
-      this.pos.clone().sub(this.renderer.mousePos),
-      10, 50,
-      clamp(mul, 10, 500),
+    const diff = this.pos.clone().sub(this.renderer.mousePos);
+    const dist = diff.norm();
+    const dir = diff.clone().div(dist);
+    if (this.applyObjectForce(
+      dir, clamp(dist - 10, 0, null),
+      50, clamp(mul, 10, 500),
     )) {
       this.kill({type:"mouse"});
     }
@@ -236,6 +264,48 @@ export class Bubble implements Entity {
     this.remainingLife = cfg.BUBBLE_DYING_DURATION;
     if (reason.type === "bubble" || reason.type == "mouse")
       this.closest = 1;
+  }
+}
+
+export class SquareBubble extends Bubble {
+  public override draw() {
+    const ctx = this.renderer.ctx;
+
+    ctx.fillStyle = this.color;
+    ctx.fillRect(
+      this.pos.x - this.radius,
+      this.pos.y - this.radius,
+      this.radius * 2,
+      this.radius * 2,
+    );
+  }
+
+  public minPos(): Vec2 {
+    return new Vec2(
+      this.pos.x - this.radius,
+      this.pos.y - this.radius,
+    );
+  }
+
+  public maxPos(): Vec2 {
+    return new Vec2(
+      this.pos.x + this.radius,
+      this.pos.y + this.radius,
+    );
+  }
+
+  public isInside(pos: Vec2): boolean {
+    const max = this.maxPos();
+    const min = this.minPos();
+    return pos.x < max.x && pos.y < max.y && pos.x > min.x && pos.y > min.y;
+  }
+
+  public override distanceFromSurface(pos: Vec2): number {
+    if (this.isInside(pos))
+      return 0;
+
+    const clamped = pos.clone().clamp(this.minPos(), this.maxPos());
+    return clamped.sub(pos).norm();
   }
 }
 

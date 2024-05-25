@@ -191,4 +191,10 @@ export class Vec2 {
   public norm(): number {
     return Math.sqrt(this.norm2());
   }
+
+  public clamp(min: Vec2 | null, max: Vec2 | null): Vec2 {
+    this.x = clamp(this.x, min?.x ?? null, max?.x ?? null);
+    this.y = clamp(this.y, min?.y ?? null, max?.y ?? null);
+    return this;
+  }
 }
