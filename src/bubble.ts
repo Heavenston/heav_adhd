@@ -25,17 +25,7 @@ export function createBubble(
     return new AntiVirusBubble(renderer, pos, 45, 3, vel);
   }
 
-  // A blackhole fills a lot of bubbles, increasing the spawn rate
-  // thus making spawning a new blackhole more probable
-  // so to avoid a vicious-cycle we half the probability for each already existing
-  // blackhole
-  let bh_brop = cfg.BLACKHOLE_BUBBLE_PROBABILITY;
-  for (const b of renderer.bubbles) {
-    if (b instanceof BlackholeBubble) {
-      bh_brop /= 2;
-    }
-  }
-  if (Math.random() < bh_brop) {
+  if (Math.random() < cfg.BLACKHOLE_BUBBLE_PROBABILITY) {
     return new BlackholeBubble(renderer, pos, radius, 10, vel);
   }
 
@@ -468,8 +458,16 @@ export class VirusBubble extends Bubble {
       if (bubble instanceof AntiVirusBubble)
         continue;
 
+
       const value = -bubble.velocity.norm2();
       if (value > targetValue) {
+        let otherHasThisTarget = this.renderer.bubbles.some(other => (
+          other instanceof VirusBubble && !other.isDying() && other.currentTarget === bubble
+        ));
+        if (otherHasThisTarget) {
+          continue;
+        }
+
         targetValue = value;
         target = bubble;
       }
@@ -609,6 +607,8 @@ export class AntiVirusBubble extends Bubble {
         continue;
       if (bubble instanceof VirusBubble)
         return bubble;
+      if (bubble instanceof BlackholeBubble)
+        return bubble;
     }
     return null;
   }
@@ -616,6 +616,9 @@ export class AntiVirusBubble extends Bubble {
   public override update() {
     super.update();
     const dt = this.renderer.dt;
+
+    if (this.isDying())
+      return;
 
     if (this.renderer.totalTime - this.lastRay > cfg.ANTIVIRUS_RAY_COOLDOWN) {
       this.lastRay = this.renderer.totalTime;
