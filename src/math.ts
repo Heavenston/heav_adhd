@@ -180,7 +180,15 @@ export class Vec2 {
       .add(other.clone().mul(t));
   }
 
+  public dot(other: Vec2): number {
+    return this.x * other.x + this.y * other.y;
+  }
+
+  public norm2(): number {
+    return this.dot(this);
+  }
+
   public norm(): number {
-    return Math.sqrt(this.x * this.x + this.y * this.y);
+    return Math.sqrt(this.norm2());
   }
 }
