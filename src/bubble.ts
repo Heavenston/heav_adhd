@@ -17,6 +17,10 @@ export function createBubble(
     return new GoldBubble(renderer, pos, radius, 99999, vel);
   }
 
+  if (Math.random() < cfg.VIRUS_BUBBLE_PROBABILITY) {
+    return new VirusBubble(renderer, pos, radius, 99999, vel);
+  }
+
   // A blackhole fills a lot of bubbles, increasing the spawn rate
   // thus making spawning a new blackhole more probable
   // so to avoid a vicious-cycle we half the probability for each already existing
@@ -181,6 +185,10 @@ export class Bubble implements Entity {
     }
   }
 
+  protected get velocityInterpolationSpeed(): number {
+    return 10;
+  }
+
   public update() {
     if (this.isDead())
       return;
@@ -194,7 +202,7 @@ export class Bubble implements Entity {
       return;
     }
 
-    this.interpolatedRadius = lerp(this.interpolatedRadius, this.targetRadius, clamp(dt * 10, 0, 1));
+    this.interpolatedRadius = lerp(this.interpolatedRadius, this.targetRadius, clamp(dt * this.velocityInterpolationSpeed, 0, 1));
     this.velocity = this.velocity.lerp(this.targetVelocity, clamp(dt * 3, 0, 1));
     this.pos.add(this.velocity.clone().mul(dt));
 
@@ -318,7 +326,7 @@ export class GoldBubble extends Bubble {
   }
 
   public override kill(reason: KillReason) {
-    const can_kill = [GoldBubble, BlackholeBubble];
+    const can_kill = [GoldBubble, VirusBubble, BlackholeBubble];
     if (reason.type === "bubble" && !can_kill.some(class_ => reason.bubble instanceof class_))
       return;
 
@@ -407,6 +415,97 @@ export class BlackholeBubble extends Bubble {
       this.targetRadius += 1;
       return;
     }
+
+    super.kill(reason);
+  }
+}
+
+export class VirusBubble extends Bubble {
+  public currentTarget: Bubble | null = null;
+
+  constructor(
+    renderer: Renderer,
+    
+    pos: Vec2,
+    radius: number,
+    life: number,
+    velocity: Vec2,
+  ) {
+    super(renderer, pos, radius, life, velocity);
+
+    this.targetVelocity = Vec2.ZERO;
+    this.colorCfg = cfg.VIRUS_BUBBLE_COLOR;
+  }
+
+  protected override forceMultiplierWith(_other: Bubble): number {
+    return 0;
+  }
+
+  protected override get velocityInterpolationSpeed(): number {
+    return 50;
+  }
+
+  protected findNewTarget() {
+    // slowest bubble
+    let target: Bubble | null = null;
+    let targetValue = -Infinity;
+    for (const bubble of this.renderer.bubbles) {
+      if (bubble.isDying())
+        continue;
+      if (bubble === this)
+        continue;
+
+      const value = -bubble.velocity.norm2();
+      if (value > targetValue) {
+        targetValue = value;
+        target = bubble;
+      }
+    }
+    this.currentTarget = target;
+  }
+
+  public override update() {
+    super.update();
+    const dt = this.renderer.dt;
+
+    if (this.currentTarget?.isDying())
+      this.currentTarget = null;
+    if (this.currentTarget === null)
+      this.findNewTarget();
+    if (this.currentTarget === null)
+      return;
+
+    const diff = this.currentTarget.pos.clone().sub(this.pos);
+    const dist = diff.norm();
+    const force = clamp(dist * 10, 1_000, null);
+    const dir = diff.clone().div(dist);
+
+    this.velocity.add(dir.mul(force).mul(dt));
+  }
+
+  public override draw() {
+    super.draw();
+  }
+
+  public override kill(reason: KillReason) {
+    if (reason.type === "wall") {
+      if (reason.dir.eq(0, 1)) {
+        this.pos.y = this.renderer.canvas.height - this.radius;
+      }
+      if (reason.dir.eq(0, -1)) {
+        this.pos.y = this.radius;
+      }
+      if (reason.dir.eq(1, 0)) {
+        this.pos.x = this.renderer.canvas.width - this.radius;
+      }
+      if (reason.dir.eq(-1, 0)) {
+        this.pos.x = this.radius;
+      }
+      return;
+    }
+    const canKill = [BlackholeBubble, VirusBubble];
+    if (reason.type === "bubble" && !canKill.some(class_ => reason.bubble instanceof class_))
+      return;
 
     super.kill(reason);
   }
