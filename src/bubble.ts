@@ -13,10 +13,6 @@ export function createBubble(
 
   const vel = new Vec2(0, clamp(gaussianRandom(150, 75), 15, null));
 
-  if (Math.random() < cfg.SQUARE_BUBBLE_PROBABILITY) {
-    return new SquareBubble(renderer, pos, radius, 99999, vel);
-  }
-
   if (Math.random() < cfg.GOLD_BUBBLE_PROBABILITY) {
     return new GoldBubble(renderer, pos, radius, 99999, vel);
   }
@@ -31,6 +27,10 @@ export function createBubble(
 
   if (Math.random() < cfg.BLACKHOLE_BUBBLE_PROBABILITY) {
     return new BlackholeBubble(renderer, pos, radius, 10, vel);
+  }
+
+  if (Math.random() < cfg.SQUARE_BUBBLE_PROBABILITY) {
+    return new SquareBubble(renderer, pos, radius, 99999, vel);
   }
 
   return new Bubble(renderer, pos, radius, 99999, vel);
