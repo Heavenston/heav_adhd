@@ -229,7 +229,7 @@ export class Bubble implements Entity {
     this.remainingLife -= dt;
 
     if (this.isDying()) {
-      this.interpolatedRadius += dt * 100;
+      this.interpolatedRadius *= 1 + dt * 2;
       this.opacity = Math.pow(this.remainingLife / cfg.BUBBLE_DYING_DURATION, 3);
       return;
     }
@@ -591,7 +591,7 @@ export class VirusBubble extends Bubble {
     if (reason.type === "wall") {
       if (reason.dir.eq(0, 1)) {
         this.pos.y = this.renderer.canvas.height - this.radius;
-        if (this.velocity.y > 0)
+        if (this.velocity.y < 0)
           this.velocity.y = 0;
       }
       if (reason.dir.eq(0, -1)) {
