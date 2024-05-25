@@ -260,7 +260,7 @@ export class Renderer {
 
       if (this.mousePos !== null)
         this.currentForceField.pos = this.mousePos;
-      this.currentForceField.force += dt * 50;
+      this.currentForceField.force *= 1 + dt * 2;
     }
     if (!this.isClicking() && this.currentForceField !== null) {
       this.currentForceField.start();

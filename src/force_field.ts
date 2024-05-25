@@ -5,7 +5,7 @@ import { Entity, Renderer } from "./renderer";
 export class ForceField implements Entity {
   private started = false;
   public age = 0;
-  #force = 100;
+  #force = 10;
   private particles: {pos: Vec2, vel: Vec2}[] = [];
 
   constructor(
@@ -29,7 +29,7 @@ export class ForceField implements Entity {
     if (this.started) {
       throw new Error("Cannot change force after started");
     }
-    this.#force = n;
+    this.#force = clamp(n, 0, 150);
   }
 
   public isDead(): boolean {
@@ -40,12 +40,14 @@ export class ForceField implements Entity {
     if (this.isDead())
       return;
     if (!this.started) {
-      const angle = Math.random() * Math.PI * 2;
-      const distance = gaussianRandom(this.force - 50, 1);
-      this.particles.push({
-        pos: this.pos.clone().add(Vec2.rotated(angle).mul(distance)),
-        vel: Vec2.ZERO,
-      });
+      for (let i = 0; i < Math.ceil(this.#force / 25); i++) {
+        const angle = Math.random() * Math.PI * 2;
+        const distance = gaussianRandom(this.radius, 1);
+        this.particles.push({
+          pos: this.pos.clone().add(Vec2.rotated(angle).mul(distance)),
+          vel: Vec2.ZERO,
+        });
+      }
 
       const toRemove = [];
       for (const particle of this.particles) {
@@ -69,14 +71,19 @@ export class ForceField implements Entity {
   }
 
   public get duration(): number {
-    return 20 * Math.pow(this.force, -0.8);
+    return 5 * Math.pow(this.force, -0.8);
   }
 
   public get radius(): number {
-    return (1 - this.opacity) * this.force;
+    const rad = this.force * 5;
+    if (!this.started)
+      return rad;
+    return (1 - this.opacity) * rad;
   }
 
   public get opacity(): number {
+    if (!this.started)
+      return 1;
     const age_fact = this.age / this.duration;
     return 1 - age_fact;
   }
@@ -88,7 +95,7 @@ export class ForceField implements Entity {
   public draw(): void {
     const ctx = this.renderer.ctx;
     if (!this.started) {
-      ctx.strokeStyle = "white";
+      ctx.strokeStyle = this.color;
       ctx.lineWidth = 5;
       ctx.lineCap = "round";
       for (const particle of this.particles) {
@@ -120,6 +127,6 @@ export class ForceField implements Entity {
       return Vec2.ZERO;
     }
 
-    return diff.clone().div(dist).mul((1 - normalized_dist) * 20 * this.opacity);
+    return diff.clone().div(dist).mul(this.force * this.opacity);
   }
 }
