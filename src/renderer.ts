@@ -45,12 +45,19 @@ export class Renderer {
 
   public targetBubbleCount: number = 40;
 
+  public statusBar: HTMLDivElement;
+
   public constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas;
     const ctx = canvas.getContext("2d");
     if (!ctx)
       throw new UserError("No context?");
     this.ctx = ctx;
+
+    const statusBar = document.getElementById("statusBar");
+    if (statusBar === null || !(statusBar instanceof HTMLDivElement))
+      throw new UserError("Missing status bar element");
+    this.statusBar = statusBar;
 
     this.canvas.addEventListener("mousemove", e => {
       this.mousePos = new Vec2(e.clientX, e.clientY);
@@ -199,7 +206,9 @@ export class Renderer {
     for (const ent of entities) {
       ent.draw();
     }
+  }
 
+  private updateStatusBar() {
     let text = "balls, count: ";
 
     const counts = this.bubbles.reduce(
@@ -221,10 +230,7 @@ export class Renderer {
     }
 
     text += `, target: ${this.targetBubbleCount} (use scroll wheel)`;
-    const fontSize = 20;
-    this.ctx.fillStyle = "white";
-    this.ctx.font = `${fontSize}px sans`;
-    this.ctx.fillText(text, 5, 5 + fontSize);
+    this.statusBar.innerText = text;
   }
 
   private updateEntities(entities: Entity[]) {
@@ -270,6 +276,8 @@ export class Renderer {
     this.updateEntities(this.bubbles);
     this.spawnBalls();
     this.updateEntities(this.forceFields);
+
+    this.updateStatusBar();
 
     this.draw();
 

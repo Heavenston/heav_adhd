@@ -8,4 +8,19 @@ body, html {
 
 body {
   overflow: hidden;
+
+  color: white;
+  font-family: sans-serif;
+}
+
+#canvas {
+  position: absolute;
+  z-index: 0;
+}
+
+#hud {
+  position: absolute;
+  z-index: 1;
+
+  margin: 0.5rem;
 }
