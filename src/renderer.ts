@@ -1,4 +1,4 @@
-import { BlackholeBubble, Bubble, createBubble, GoldBubble } from "./bubble";
+import { Bubble, createBubble } from "./bubble";
 import { BACKGROUND_COLOR } from "./config";
 import { ForceField } from "./force_field";
 import { Vec2 } from "./math";
@@ -105,7 +105,7 @@ export class Renderer {
         const touchB = t.touches[1];
         const a = new Vec2(touchA.clientX, touchA.clientY);
         const b = new Vec2(touchB.clientX, touchB.clientY);
-        this.mousePos = a.lerp(b, 0.5);
+        this.mousePos = Vec2.lerp(a, b, 0.5);
         this.lastMouseDown = { pos: this.mousePos.clone(), time: this.totalTime };
       }
     }, { passive: false });
@@ -138,7 +138,7 @@ export class Renderer {
         const touchB = t.touches[1];
         const a = new Vec2(touchA.clientX, touchA.clientY);
         const b = new Vec2(touchB.clientX, touchB.clientY);
-        this.mousePos = a.lerp(b, 0.5);
+        this.mousePos = Vec2.lerp(a, b, 0.5);
       }
 
     }, { passive: false });
