@@ -483,10 +483,6 @@ export class VirusBubble extends Bubble {
     this.velocity.add(dir.mul(force).mul(dt));
   }
 
-  public override draw() {
-    super.draw();
-  }
-
   public override kill(reason: KillReason) {
     if (reason.type === "wall") {
       if (reason.dir.eq(0, 1)) {
