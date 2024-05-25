@@ -175,9 +175,9 @@ export class Vec2 {
     throw new TypeError("wrong types");
   }
 
-  public lerp(other: Vec2, t: number): Vec2 {
-    return this.clone().mul(1 - t)
-      .add(other.clone().mul(t));
+  public static lerp(a: Vec2, b: Vec2, t: number): Vec2 {
+    return a.clone().mul(1 - t)
+      .add(b.clone().mul(t));
   }
 
   public dot(other: Vec2): number {

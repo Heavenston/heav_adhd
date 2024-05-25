@@ -218,6 +218,10 @@ export class Bubble implements Entity {
   }
 
   protected get velocityInterpolationSpeed(): number {
+    return 5;
+  }
+
+  protected get radiusInterpolationSpeed(): number {
     return 10;
   }
 
@@ -234,8 +238,16 @@ export class Bubble implements Entity {
       return;
     }
 
-    this.interpolatedRadius = lerp(this.interpolatedRadius, this.targetRadius, clamp(dt * this.velocityInterpolationSpeed, 0, 1));
-    this.velocity = this.velocity.lerp(this.targetVelocity, clamp(dt * 3, 0, 1));
+    this.interpolatedRadius = lerp(
+      this.interpolatedRadius,
+      this.targetRadius,
+      clamp(dt * this.radiusInterpolationSpeed, 0, 1)
+    );
+    this.velocity = Vec2.lerp(
+      this.velocity,
+      this.targetVelocity,
+      clamp(dt * this.velocityInterpolationSpeed, 0, 1)
+    );
     this.pos.add(this.velocity.clone().mul(dt));
 
     this.updateWallsCollisions();
@@ -534,7 +546,7 @@ export class VirusBubble extends Bubble {
   }
 
   protected override get velocityInterpolationSpeed(): number {
-    return 50;
+    return 7.5;
   }
 
   protected findNewTarget() {
@@ -548,9 +560,10 @@ export class VirusBubble extends Bubble {
         continue;
       if (bubble instanceof BlackholeBubble)
         continue;
+      if (bubble instanceof VirusBubble)
+        continue;
       if (bubble instanceof AntiVirusBubble)
         continue;
-
 
       const value = -bubble.velocity.norm2();
       if (value > targetValue) {
@@ -570,7 +583,6 @@ export class VirusBubble extends Bubble {
 
   public override update() {
     super.update();
-    const dt = this.renderer.dt;
 
     if (this.currentTarget?.isDying())
       this.currentTarget = null;
@@ -581,10 +593,10 @@ export class VirusBubble extends Bubble {
 
     const diff = this.currentTarget.pos.clone().sub(this.pos);
     const dist = diff.norm();
-    const force = clamp(dist * 10, 1_000, null);
+    const force = clamp(dist * 3, this.currentTarget.velocity.norm() * 2, null);
     const dir = diff.clone().div(dist);
 
-    this.velocity.add(dir.mul(force).mul(dt));
+    this.targetVelocity = dir.mul(force);
   }
 
   public override kill(reason: KillReason) {
@@ -649,8 +661,8 @@ export class AntiVirusBubble extends Bubble {
 
   protected override updateMouseCollision(): void { }
 
-  protected override get velocityInterpolationSpeed(): number {
-    return 50;
+  protected override get radiusInterpolationSpeed(): number {
+    return 5;
   }
 
   public override get zindex() {
@@ -688,7 +700,6 @@ export class AntiVirusBubble extends Bubble {
       return;
 
     for (const ray of this.rays) {
-      console.log(ray);
       const animation_t = (ray.age / cfg.ANTIVIRUS_RAY_ANIMATION_DURATION);
       ctx.strokeStyle = `rgba(255,255,255,${1-animation_t})`;
       ctx.lineWidth = animation_t * 20 + 5;
