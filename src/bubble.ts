@@ -195,8 +195,11 @@ export class Bubble implements Entity {
     const diff = this.pos.clone().sub(this.renderer.mousePos);
     const dist = diff.norm();
     const dir = diff.clone().div(dist);
+
+    const gap = this.distanceFromSurface(this.renderer.mousePos);
+
     if (this.applyObjectForce(
-      dir, clamp(dist - 10, 0, null),
+      dir, clamp(gap - 10, 0, null),
       50, clamp(mul, 10, 500),
     )) {
       this.kill({type:"mouse"});
