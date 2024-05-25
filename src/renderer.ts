@@ -53,17 +53,13 @@ export class Renderer {
     this.ctx = ctx;
 
     this.canvas.addEventListener("mousemove", e => {
-      console.log("move");
       this.mousePos = new Vec2(e.clientX, e.clientY);
-      console.log(this.mouseLastPos);
     });
     this.canvas.addEventListener("mouseleave", () => {
-      console.log("leave");
       this.mousePos = null;
     });
 
     this.canvas.addEventListener("wheel", e => {
-      console.log("wheel");
       if (e.deltaY > 0) {
         this.targetBubbleCount -= 1;
         if (this.targetBubbleCount < 1)
@@ -74,8 +70,12 @@ export class Renderer {
       }
     }, { passive: true });
 
-    this.canvas.addEventListener("mousedown", () => {
-      console.log("down");
+    this.canvas.addEventListener("mousedown", e => {
+      if (e.button !== 0)
+        return;
+
+      e.preventDefault();
+
       if (this.mousePos === null)
         return;
       this.lastMouseDown = {
@@ -85,7 +85,6 @@ export class Renderer {
     });
 
     this.canvas.addEventListener("mouseup", () => {
-      console.log("up");
       if (this.mousePos === null)
         return;
       this.lastMouseUp = {
