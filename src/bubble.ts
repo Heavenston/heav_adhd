@@ -357,6 +357,10 @@ export class GoldBubble extends Bubble {
   }
 
   private findPair() {
+    if (this.pair !== null) {
+      this.pair.pair = null;
+      this.pair = null;
+    }
     for (const bubble of this.renderer.bubbles) {
       if (!(bubble instanceof GoldBubble))
         continue;
