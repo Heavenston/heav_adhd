@@ -230,7 +230,8 @@ export class Renderer {
     }
 
     text += `, target: ${this.targetBubbleCount} (use scroll wheel)`;
-    this.statusBar.innerText = text;
+    if (this.statusBar.innerText !== text)
+      this.statusBar.innerText = text;
   }
 
   private updateEntities(entities: Entity[]) {
