@@ -4,10 +4,11 @@ import { BubbleColorCfg, Entity, Renderer } from "./renderer";
 
 export function createBubble(
   renderer: Renderer,
+  pos?: Vec2,
 ): Bubble {
   const radius = gaussianRandom(30, 5);
   // Use radius to prevent touching the sides
-  const pos = Vec2.random()
+  pos = pos ?? Vec2.random()
     .mul(renderer.canvas.width - radius*2, renderer.canvas.height - radius*2)
     .add(radius);
 
@@ -188,27 +189,6 @@ export class Bubble implements Entity {
       }
     }
   }
-
-  // protected updateMouseCollision() {
-  //   if (this.renderer.mousePos === null)
-  //     return;
-  //   if (this.renderer.timeSinceLastClick() < cfg.MOUSE_CLICK_COOLDOWN)
-  //     return;
-  //   const mul = this.renderer.mouseSpeed?.norm() ?? 0;
-
-  //   const diff = this.pos.clone().sub(this.renderer.mousePos);
-  //   const dist = diff.norm();
-  //   const dir = diff.clone().div(dist);
-
-  //   const gap = this.distanceFromSurface(this.renderer.mousePos);
-
-  //   if (this.applyObjectForce(
-  //     dir, clamp(gap - 10, 0, null),
-  //     50, clamp(mul, 10, 500),
-  //   )) {
-  //     this.kill({type:"mouse"});
-  //   }
-  // }
 
   protected get velocityInterpolationSpeed(): number {
     return 5;
@@ -432,9 +412,6 @@ export class GoldBubble extends Bubble {
       return;
     }
 
-    if (reason.type === "mouse")
-      return;
-
     super.kill(reason);
   }
 }
@@ -489,8 +466,6 @@ export class BlackholeBubble extends Bubble {
   }
 
   public override kill(reason: KillReason) {
-    if (reason.type === "mouse")
-      return;
     if (reason.type === "wall") {
       if (reason.dir.eq(0, 1)) {
         this.pos.y = this.renderer.canvas.height - this.radius;

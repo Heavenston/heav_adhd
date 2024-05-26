@@ -35,6 +35,7 @@ export class Renderer {
   public bubbles: Bubble[] = [];
   public otherEntities: Entity[] = [];
 
+  private clicked: boolean = false;
   private mouseLastPos: Vec2 | null = null;
   public mousePos: Vec2 | null = null;
   public mouseSpeed: Vec2 | null = null;
@@ -130,6 +131,7 @@ export class Renderer {
         pos: this.mousePos.clone(),
         time: this.totalTime,
       };
+      this.clicked = true;
     });
 
     this.canvas.addEventListener("mouseup", () => {
@@ -155,6 +157,7 @@ export class Renderer {
         const b = new Vec2(touchB.clientX, touchB.clientY);
         this.mousePos = Vec2.lerp(a, b, 0.5);
         this.lastMouseDown = { pos: this.mousePos.clone(), time: this.totalTime };
+        this.clicked = true;
       }
     }, { passive: false });
     this.canvas.addEventListener("touchend", t => {
@@ -198,6 +201,10 @@ export class Renderer {
     if (this.lastMouseUp && this.lastMouseUp.time > this.lastMouseDown.time)
       return false;
     return true;
+  }
+
+  public justClicked(): boolean {
+    return this.clicked;
   }
 
   public lastClickDuration(): number {
@@ -315,5 +322,6 @@ export class Renderer {
     this.draw();
 
     this.mouseLastPos = this.mousePos;
+    this.clicked = false;
   }
 }
