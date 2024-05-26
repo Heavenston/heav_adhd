@@ -1,3 +1,6 @@
+:root {
+  --cool-blue: rgb(100, 136, 234);
+}
 
 body, html {
   padding: 0;
@@ -43,20 +46,25 @@ button {
   gap: 0.5rem;
 
   >.tool {
+    --border-size: 0.2rem;
+
     display: inline-flex;
     align-items: center;
     justify-content: center;
 
+    border-style: solid;
     border-radius: 0.2rem;
-    padding: 0.5rem;
-    padding-left: 0.75rem;
-    padding-right: 0.75rem;
+    border-color: white;
+    border-width: var(--border-size);
+    padding: calc(0.5rem - var(--border-size));
+    padding-left: calc(0.75rem - var(--border-size));
+    padding-right: calc(0.75rem - var(--border-size));
     box-sizing: border-box;
 
-    background-color: gray;
+    background-color: black;
 
     &:not(.selected):hover {
-      background-color: blue;
+      background-color: var(--cool-blue);
     }
 
     // TODO: Replace with something else
@@ -67,12 +75,8 @@ button {
     &.selected {
       cursor: default;
 
-      border-color: white;
-      border-width: 5px;
-      padding: calc(0.5rem - 5px);
-      padding-left: calc(0.75rem - 5px);
-      padding-right: calc(0.75rem - 5px);
-      border-style: solid;
+      --border-size: 0.3rem;
+      border-color: var(--cool-blue);
     }
   }
 }
