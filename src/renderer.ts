@@ -1,7 +1,7 @@
 import { Bubble, createBubble } from "./bubble";
 import { BACKGROUND_COLOR } from "./config";
-import { ForceField } from "./force_field";
 import { Vec2 } from "./math";
+import { Tool } from "./tool";
 import { UserError } from "./usererror";
 
 export interface Entity {
@@ -9,6 +9,7 @@ export interface Entity {
   draw(): void;
 
   isDead(): boolean;
+  afterRemove?(): void;
 
   get zindex(): number;
 }
@@ -32,7 +33,7 @@ export class Renderer {
   public totalTime: number = 0;
   public dt: number = 0;
   public bubbles: Bubble[] = [];
-  public forceFields: ForceField[] = [];
+  public otherEntities: Entity[] = [];
 
   private mouseLastPos: Vec2 | null = null;
   public mousePos: Vec2 | null = null;
@@ -41,7 +42,7 @@ export class Renderer {
   public lastMouseDown: EventClick | null = null;
   public lastMouseUp: EventClick | null = null;
 
-  public currentForceField: ForceField | null = null;
+  public currentTool: Tool;
 
   public targetBubbleCount: number = 40;
 
@@ -58,6 +59,46 @@ export class Renderer {
     if (statusBar === null || !(statusBar instanceof HTMLDivElement))
       throw new UserError("Missing status bar element");
     this.statusBar = statusBar;
+
+    let currentSelection: string | null = null;
+    document.querySelectorAll("#toolbar>.tool").forEach(el => {
+      if (!(el instanceof HTMLButtonElement)) {
+        console.warn("Tool is not a button");
+        return;
+      }
+      if (el.classList.contains("selected"))
+        currentSelection = el.getAttribute("data-tool-name") ?? currentSelection;
+      el.addEventListener("click", e => {
+        e.preventDefault();
+
+        const newSelection = el.getAttribute("data-tool-name");
+        if (newSelection === null) {
+          console.warn("Missing tool name on", el);
+          return;
+        }
+        const toolClass = Tool.getFromName(newSelection);
+        if (toolClass === null) {
+          console.warn("Invalid tool name on", el);
+          return;
+        }
+        this.currentTool.clean();
+        this.currentTool = new toolClass(this);
+
+        const selected = document.querySelector("#toolbar>.selected");
+        if (selected && selected instanceof HTMLButtonElement) {
+          selected.classList.remove("selected");
+          selected.disabled = false;
+        }
+        el.classList.add("selected");
+        el.disabled = true;
+      });
+    });
+    if (currentSelection === null)
+      throw new Error("No default selected tool");
+    const toolClass = Tool.getFromName(currentSelection);
+    if (toolClass === null)
+      throw new Error("Default selected tool has invalid name");
+    this.currentTool = new toolClass(this);
 
     this.canvas.addEventListener("mousemove", e => {
       this.mousePos = new Vec2(e.clientX, e.clientY);
@@ -201,7 +242,7 @@ export class Renderer {
     this.ctx.fillStyle = BACKGROUND_COLOR;
     this.ctx.fillRect(0,0,this.canvas.width,this.canvas.height);
 
-    const entities: Entity[] = [...this.bubbles, ...this.forceFields];
+    const entities: Entity[] = [...this.bubbles, ...this.otherEntities];
     entities.sort((a, b) => a.zindex - b.zindex);
     for (const ent of entities) {
       ent.draw();
@@ -246,6 +287,10 @@ export class Renderer {
     for (const byby of toRemove) {
       entities.splice(entities.indexOf(byby), 1);
     }
+    for (const byby of toRemove)
+    {
+      byby.afterRemove?.();
+    }
   }
 
   public update(dt: number) {
@@ -259,24 +304,11 @@ export class Renderer {
       this.mouseSpeed = null;
     }
 
-    if (this.isClicking()) {
-      if (this.currentForceField === null) {
-        this.currentForceField = new ForceField(this, Vec2.ZERO);
-        this.forceFields.push(this.currentForceField);
-      }
-
-      if (this.mousePos !== null)
-        this.currentForceField.pos = this.mousePos;
-      this.currentForceField.force *= 1 + dt * 2;
-    }
-    if (!this.isClicking() && this.currentForceField !== null) {
-      this.currentForceField.start();
-      this.currentForceField = null;
-    }
+    this.currentTool.update();
 
     this.updateEntities(this.bubbles);
     this.spawnBalls();
-    this.updateEntities(this.forceFields);
+    this.updateEntities(this.otherEntities);
 
     this.updateStatusBar();
 

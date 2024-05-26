@@ -189,33 +189,26 @@ export class Bubble implements Entity {
     }
   }
 
-  protected updateMouseCollision() {
-    if (this.renderer.mousePos === null)
-      return;
-    if (this.renderer.timeSinceLastClick() < cfg.MOUSE_CLICK_COOLDOWN)
-      return;
-    const mul = this.renderer.mouseSpeed?.norm() ?? 0;
+  // protected updateMouseCollision() {
+  //   if (this.renderer.mousePos === null)
+  //     return;
+  //   if (this.renderer.timeSinceLastClick() < cfg.MOUSE_CLICK_COOLDOWN)
+  //     return;
+  //   const mul = this.renderer.mouseSpeed?.norm() ?? 0;
 
-    const diff = this.pos.clone().sub(this.renderer.mousePos);
-    const dist = diff.norm();
-    const dir = diff.clone().div(dist);
+  //   const diff = this.pos.clone().sub(this.renderer.mousePos);
+  //   const dist = diff.norm();
+  //   const dir = diff.clone().div(dist);
 
-    const gap = this.distanceFromSurface(this.renderer.mousePos);
+  //   const gap = this.distanceFromSurface(this.renderer.mousePos);
 
-    if (this.applyObjectForce(
-      dir, clamp(gap - 10, 0, null),
-      50, clamp(mul, 10, 500),
-    )) {
-      this.kill({type:"mouse"});
-    }
-  }
-
-  protected updateForceFieldCollisions() {
-    const dt = this.renderer.dt;
-    for (const ff of this.renderer.forceFields) {
-      this.velocity.add(ff.getForceOn(this).div(dt));
-    }
-  }
+  //   if (this.applyObjectForce(
+  //     dir, clamp(gap - 10, 0, null),
+  //     50, clamp(mul, 10, 500),
+  //   )) {
+  //     this.kill({type:"mouse"});
+  //   }
+  // }
 
   protected get velocityInterpolationSpeed(): number {
     return 5;
@@ -252,8 +245,6 @@ export class Bubble implements Entity {
 
     this.updateWallsCollisions();
     this.updateBubbleCollisions();
-    this.updateMouseCollision();
-    this.updateForceFieldCollisions();
   }
 
   public draw() {
@@ -662,8 +653,6 @@ export class AntiVirusBubble extends Bubble {
   protected override forceMultiplierWith(_other: Bubble): number {
     return 0;
   }
-
-  protected override updateMouseCollision(): void { }
 
   protected override get radiusInterpolationSpeed(): number {
     return 5;

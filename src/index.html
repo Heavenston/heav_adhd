@@ -9,12 +9,13 @@
   </head>
   <body>
     <canvas id="canvas"></canvas>
-    <div id="hud">
-      <div id="statusBar">
-        STATUS
-      </div>
-      <div id="toolbar">
-      </div>
+    <div class="hud" id="statusBar">
+      STATUS
+    </div>
+    <div class="hud" id="toolbar">
+      <button data-tool-name="forceField" class="tool selected" disabled><span>Force field</span></button>
+      <button data-tool-name="deleter" class="tool"><span>Deleter</span></button>
+      <button data-tool-name="spawn" class="tool"><span>Spawn</span></button>
     </div>
   </body>
 </html>

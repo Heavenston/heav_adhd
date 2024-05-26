@@ -13,14 +13,66 @@ body {
   font-family: sans-serif;
 }
 
+/* <CSS RESET> */
+button, input {
+  border: none;
+  font-family: inherit;
+  color: inherit;
+}
+button {
+  cursor: pointer;
+}
+/* </CSS RESET> */
+
 #canvas {
   position: absolute;
   z-index: 0;
 }
 
-#hud {
+.hud {
   position: absolute;
   z-index: 1;
 
   margin: 0.5rem;
+}
+
+#toolbar {
+  right: 0;
+  display: flex;
+  flex-direction: row;
+  gap: 0.5rem;
+
+  >.tool {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    border-radius: 0.2rem;
+    padding: 0.5rem;
+    padding-left: 0.75rem;
+    padding-right: 0.75rem;
+    box-sizing: border-box;
+
+    background-color: gray;
+
+    &:not(.selected):hover {
+      background-color: blue;
+    }
+
+    // TODO: Replace with something else
+    &:focus {
+      outline: none;
+    }
+
+    &.selected {
+      cursor: default;
+
+      border-color: white;
+      border-width: 5px;
+      padding: calc(0.5rem - 5px);
+      padding-left: calc(0.75rem - 5px);
+      padding-right: calc(0.75rem - 5px);
+      border-style: solid;
+    }
+  }
 }
