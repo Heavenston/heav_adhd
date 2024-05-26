@@ -221,7 +221,7 @@ export class Renderer {
     return this.totalTime - (this.lastMouseUp?.time ?? this.totalTime);
   }
 
-  private trySpawnBall(ball: Bubble): boolean {
+  public trySpawnBall(ball: Bubble): boolean {
     for (const other of this.bubbles) {
       if (other.pos.clone().sub(ball.pos).norm() < other.maxRadius + ball.maxRadius) {
         return false;

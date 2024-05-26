@@ -86,15 +86,23 @@ export class DeleterTool extends Tool {
 }
 
 export class SpawnTool extends Tool {
+  public lastPlace: number = -Infinity;
+
   public override update() {
     const rend = this.renderer;
 
-    if (!rend.justClicked())
+    if ((this.renderer.totalTime - this.lastPlace) < cfg.SPAWN_TOOL_COOLDOWN)
+      return;
+
+    if (!rend.isClicking())
       return;
     const mp = rend.mousePos;
     if (!mp)
       return;
 
-    this.renderer.bubbles.push(createBubble(rend, mp));
+    const bubble = createBubble(rend, mp);
+    if (this.renderer.trySpawnBall(bubble)) {
+      this.lastPlace = this.renderer.totalTime;
+    }
   }
 }
