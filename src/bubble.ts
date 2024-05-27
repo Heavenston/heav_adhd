@@ -23,7 +23,7 @@ export function createBubble(
   }
 
   if (Math.random() < cfg.ANTIVIRUS_BUBBLE_PROBABILITY) {
-    return new AntiVirusBubble(renderer, pos, 45, 3, vel);
+    return new AntiVirusBubble(renderer, pos, radius * 2, gaussianRandom(4, 1), vel);
   }
 
   if (Math.random() < cfg.BLACKHOLE_BUBBLE_PROBABILITY) {
@@ -332,12 +332,18 @@ export class GoldBubble extends Bubble {
       this.pair.pair = null;
       this.pair = null;
     }
+
+    const range = cfg.GOLD_BUBBLE_RAY_RANGE * this.radius;
     for (const bubble of this.renderer.bubbles) {
       if (!(bubble instanceof GoldBubble))
         continue;
       if (bubble === this)
         continue;
       if (bubble.isDying())
+        continue;
+
+      const dist = bubble.pos.clone().sub(this.pos).norm2();
+      if (dist > range ** 2)
         continue;
 
       if (bubble.pair === null) {
@@ -684,11 +690,18 @@ export class AntiVirusBubble extends Bubble {
   }
 
   private findTarget(): Bubble | null {
+    const range = cfg.ANTIVIRUS_RAY_RANGE * this.radius;
     for (const bubble of this.renderer.bubbles) {
       if (bubble === this)
         continue;
       if (bubble.isDying())
         continue;
+
+      const dist2 = bubble.pos.clone().sub(this.pos).norm2();
+
+      if (dist2 > range ** 2)
+        continue;
+        
       if (bubble instanceof VirusBubble)
         return bubble;
       if (bubble instanceof BlackholeBubble)
