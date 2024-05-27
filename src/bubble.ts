@@ -368,7 +368,7 @@ export class GoldBubble extends Bubble {
       return;
     }
 
-    if (this.pair !== null && (this.pair.isDying() || !this.renderer.bubbles.includes(this.pair)))
+    if (this.pair !== null && (this.pair.isDying() || !this.renderer.bubbles.includes(this.pair) || this.pair.pair !== this))
       this.pair = null;
     if (this.pair === null)
       this.findPair();
