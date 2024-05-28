@@ -47,6 +47,7 @@ function init() {
     await init();
   }
   catch(e) {
+    console.error(e);
     if (e instanceof UserError) {
       alert("User error !: " + e.message);
     }

@@ -111,8 +111,8 @@ export class Renderer {
     this.canvas.addEventListener("wheel", e => {
       if (e.deltaY > 0) {
         this.targetBubbleCount -= 1;
-        if (this.targetBubbleCount < 1)
-          this.targetBubbleCount = 1;
+        if (this.targetBubbleCount < 0)
+          this.targetBubbleCount = 0;
       }
       else if (e.deltaY < 1) {
         this.targetBubbleCount += 1;
@@ -270,7 +270,7 @@ export class Renderer {
         return counts;
       }, {} as {[key: string]: number}
     );
-    text += Object.values(counts).reduce((a, b) => a + b) ?? 0;
+    text += Object.values(counts).reduce((a, b) => a + b, 0);
     for (const key of Object.keys(counts)) {
       if (key === "bubble")
         continue;
