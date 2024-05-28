@@ -100,7 +100,7 @@ export class SpawnTool extends Tool {
     if (!mp)
       return;
 
-    const bubble = createBubble(rend, mp);
+    const bubble = createBubble(rend, { pos: mp, });
     if (this.renderer.trySpawnBall(bubble)) {
       this.lastPlace = this.renderer.totalTime;
     }

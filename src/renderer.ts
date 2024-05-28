@@ -84,6 +84,7 @@ export class Renderer {
         }
         this.currentTool.clean();
         this.currentTool = new toolClass(this);
+        this.currentTool.init();
 
         const selected = document.querySelector("#toolbar>.selected");
         if (selected && selected instanceof HTMLButtonElement) {
@@ -100,6 +101,7 @@ export class Renderer {
     if (toolClass === null)
       throw new Error("Default selected tool has invalid name");
     this.currentTool = new toolClass(this);
+    this.currentTool.init();
 
     this.canvas.addEventListener("mousemove", e => {
       this.mousePos = new Vec2(e.clientX, e.clientY);
