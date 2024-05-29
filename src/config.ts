@@ -27,7 +27,7 @@ export const SQUARE_BUBBLE_PROBABILITY = 0.05;
 export const GOLD_BUBBLE_PROBABILITY = 0.01;
 export const BLACKHOLE_BUBBLE_PROBABILITY = 0.001;
 export const VIRUS_BUBBLE_PROBABILITY = 0.005;
-export const ANTIVIRUS_BUBBLE_PROBABILITY = 0.005;
+export const ANTIVIRUS_BUBBLE_PROBABILITY = VIRUS_BUBBLE_PROBABILITY / 3;
 
 export const DEFAULT_BUBBLE_COLOR: BubbleColorCfg = {
   default: Object.freeze([100, 136, 234] as const),
