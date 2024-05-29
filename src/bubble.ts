@@ -30,6 +30,9 @@ export type KillReason = {
   // Kills itself because there isn't anyone, used by bubbles that can't die
   // if nobody is here so they don't just sit there
   type: "underpopulation_suicide"
+} | {
+  type: "other",
+  message: string,
 };
 
 export const bubbleClasses = {

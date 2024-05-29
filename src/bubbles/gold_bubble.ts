@@ -1,4 +1,4 @@
-import { BlackholeBubble, Bubble, BubbleOverrides, KillReason, VirusBubble } from "../bubble";
+import { AntiVirusBubble, BlackholeBubble, Bubble, BubbleOverrides, KillReason, VirusBubble } from "../bubble";
 import { clamp } from "../math";
 import { Renderer } from "../renderer";
 import * as cfg from "../config";
@@ -98,7 +98,7 @@ export class GoldBubble extends Bubble {
   }
 
   public override kill(reason: KillReason) {
-    const can_kill = [GoldBubble, VirusBubble, BlackholeBubble];
+    const can_kill = [GoldBubble, VirusBubble, BlackholeBubble, AntiVirusBubble];
     if (reason.type === "bubble" && !can_kill.some(class_ => reason.bubble instanceof class_))
       return;
 

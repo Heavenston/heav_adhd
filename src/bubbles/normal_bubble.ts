@@ -18,7 +18,7 @@ export class Bubble implements Entity {
   protected interpolatedRadius: number = 0;
   protected targetRadius: number;
 
-  protected opacity: number = 1;
+  #opacity: number = 1;
   protected closest: number = 9999;
 
   public colorCfg: BubbleColorCfg = cfg.DEFAULT_BUBBLE_COLOR;
@@ -69,6 +69,10 @@ export class Bubble implements Entity {
     return this.radius / 2;
   }
 
+  get opacity(): number {
+    return this.#opacity;
+  }
+
   get color(): string {
     const normal = this.colorCfg.default;
     const close = this.colorCfg.close;
@@ -79,7 +83,7 @@ export class Bubble implements Entity {
       normal[2] * (1 - closest) + close[2] * closest,
     ];
 
-    return `rgba(${choice.map(Math.round).join(",")},${this.opacity})`;
+    return `rgba(${choice.map(Math.round).join(",")},${this.#opacity})`;
   }
 
   /// 0 if pos is at the surface or inside, 1 if 1 pixel from surface
@@ -179,7 +183,7 @@ export class Bubble implements Entity {
 
     if (this.isDying()) {
       this.interpolatedRadius *= 1 + dt * 2;
-      this.opacity = Math.pow(this.remainingLife / cfg.BUBBLE_DYING_DURATION, 3);
+      this.#opacity = Math.pow(this.remainingLife / cfg.BUBBLE_DYING_DURATION, 3);
       return;
     }
 

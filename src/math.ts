@@ -197,4 +197,8 @@ export class Vec2 {
     this.y = clamp(this.y, min?.y ?? null, max?.y ?? null);
     return this;
   }
+
+  public angleDiff(to: Vec2): number {
+    return Math.atan2(this.y - to.y, this.x - to.x);
+  }
 }
