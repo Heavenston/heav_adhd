@@ -20,7 +20,7 @@ export const GOLD_BUBBLE_RAY_RANGE = 20;
 
 export const ANTIVIRUS_RAY_COOLDOWN = 0.25;
 export const ANTIVIRUS_RAY_ANIMATION_DURATION = 1;
-export const ANTIVIRUS_RAY_RANGE = 10;
+export const ANTIVIRUS_RAY_RANGE = 30;
 
 export const SQUARE_BUBBLE_PROBABILITY = 0.05;
 export const GOLD_BUBBLE_PROBABILITY = 0.01;

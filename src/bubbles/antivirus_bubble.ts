@@ -87,7 +87,7 @@ export class AntiVirusBubble extends Bubble {
   }
 
   private findTarget(): Bubble | null {
-    const range = cfg.ANTIVIRUS_RAY_RANGE * this.radius;
+    const range2 = (cfg.ANTIVIRUS_RAY_RANGE * this.radius) ** 2;
     for (const bubble of this.renderer.bubbles) {
       if (bubble === this)
         continue;
@@ -95,8 +95,7 @@ export class AntiVirusBubble extends Bubble {
         continue;
 
       const dist2 = bubble.pos.clone().sub(this.pos).norm2();
-
-      if (dist2 > range ** 2)
+      if (dist2 > range2)
         continue;
         
       if (bubble instanceof VirusBubble)
