@@ -17,7 +17,7 @@ export class VirusBubble extends Bubble {
     this.colorCfg = cfg.VIRUS_BUBBLE_COLOR;
   }
 
-  public override get displayName(): string {
+  public static override get displayName(): string {
     return "virus";
   }
 

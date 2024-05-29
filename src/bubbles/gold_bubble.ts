@@ -16,7 +16,7 @@ export class GoldBubble extends Bubble {
     this.colorCfg = cfg.GOLD_BUBBLE_COLOR;
   }
 
-  public override get displayName(): string {
+  public static override get displayName(): string {
     return "golden";
   }
 

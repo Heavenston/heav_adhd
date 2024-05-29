@@ -24,7 +24,7 @@ export class AntiVirusBubble extends Bubble {
     this.lastRay = renderer.totalTime;
   }
 
-  public override get displayName(): string {
+  public static override get displayName(): string {
     return "antivirus";
   }
 

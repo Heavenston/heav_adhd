@@ -20,7 +20,7 @@ export class BlackholeBubble extends Bubble {
     this.colorCfg = cfg.BLACKHOLE_BUBBLE_COLOR;
   }
 
-  public override get displayName(): string {
+  public static override get displayName(): string {
     return "black hole";
   }
 

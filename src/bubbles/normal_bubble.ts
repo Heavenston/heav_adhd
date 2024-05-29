@@ -44,8 +44,13 @@ export class Bubble implements Entity {
     this.targetVelocity = velocity;
   }
 
-  public get displayName(): string {
+  public static get displayName(): string {
     return "bubble";
+  }
+
+  public get displayName(): string {
+    // If a subclass overrides the static displayName this gets the right one
+    return (this.constructor as any)?.displayName ?? "error";
   }
 
   get zindex(): number {

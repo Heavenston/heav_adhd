@@ -14,7 +14,7 @@ export class SquareBubble extends Bubble {
     );
   }
 
-  public override get displayName(): string {
+  public static override get displayName(): string {
     return "square";
   }
 
