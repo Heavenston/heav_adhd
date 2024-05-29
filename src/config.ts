@@ -4,7 +4,7 @@ export const BACKGROUND_COLOR = "#202020";
 export const BUBBLE_DYING_DURATION = 0.5;
 
 /// If a bubble is 'undercrowded' for x seconds it kills itself
-export const UNDERPOPULATION_SUICIDE_AFTER = 2;
+export const UNDERPOPULATION_SUICIDE_AFTER = 30;
 
 export const FORCE_FIELD_GROWTH_SPEED = 2;
 export const FORCE_FIELD_DEFAULT_FORCE = 1_000;

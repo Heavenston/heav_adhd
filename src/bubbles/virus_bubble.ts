@@ -61,8 +61,8 @@ export class VirusBubble extends Bubble {
     }
     this.currentTarget = target;
 
-    if (!target && rec)
-      return this.findNewTarget([], rec = false);
+    // if (!target && rec)
+    //   return this.findNewTarget([], rec = false);
   }
 
   public override update() {
@@ -78,6 +78,8 @@ export class VirusBubble extends Bubble {
         this.kill({
           type: "underpopulation_suicide",
         });
+
+      this.targetVelocity = Vec2.ZERO;
       return;
     }
     this.underpopulatedSince = 0;

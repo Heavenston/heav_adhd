@@ -5,6 +5,7 @@ import * as cfg from "../config";
 
 class AntiBody implements Entity {
   #target: Bubble | null = null;
+  #isGoingHome: boolean = false;
   
   public opacity: number = 0;
   public relativePosition: Vec2;
@@ -20,7 +21,7 @@ class AntiBody implements Entity {
   }
 
   public get started(): boolean {
-    return this.#target !== null;
+    return this.#target !== null || this.#isGoingHome;
   }
 
   constructor(
@@ -36,6 +37,22 @@ class AntiBody implements Entity {
     if (this.#target)
       throw new Error("Already a bubble");
     this.#target = target;
+    this.speed = 0;
+  }
+
+  private moveTowards(target: Vec2): number {
+    const diff = target.clone().sub(this.position);
+    const dist = diff.norm();
+    const dir = diff.clone().div(dist);
+
+    this.rotation = dir.angleDiff(Vec2.ZERO) - Math.PI/2;
+    this.speed = lerp(this.speed, cfg.ANTIVIRUS_ANTIBODY_SPEED, clamp(this.renderer.dt, 0, 1));
+
+    this.position.add(dir.clone()
+      .mul(this.speed)
+      .mul(this.renderer.dt));
+
+    return dist;
   }
   
   update(): void {
@@ -48,14 +65,33 @@ class AntiBody implements Entity {
       this.position = this.antivirus.pos.clone().add(this.relativePosition);
       return;
     }
+
+    if (this.#isGoingHome) {
+      if (this.antivirus.isDying()) {
+        this.dead = true;
+        return;
+      }
+
+      const dist = this.moveTowards(this.antivirus.pos.clone()
+        .add(this.relativePosition));
+
+      if (dist < 10) {
+        this.#isGoingHome = false;
+        return;
+      }
+
+      return;
+    }
+    
     if (this.#target === null)
       return;
 
-    const diff = this.#target.pos.clone().sub(this.position);
-    const dist = diff.norm();
-    const dir = diff.clone().div(dist);
-
-    this.rotation = dir.angleDiff(Vec2.ZERO) - Math.PI/2;
+    if (this.#target.isDying()) {
+      this.#target = null;
+      this.#isGoingHome = true;
+      this.speed = 0;
+      return;
+    }
 
     const dist_surf = this.#target.distanceFromSurface(this.position);
     if (dist_surf < 10) {
@@ -67,11 +103,7 @@ class AntiBody implements Entity {
       return;
     }
 
-    this.speed = lerp(this.speed, cfg.ANTIVIRUS_ANTIBODY_SPEED, clamp(this.renderer.dt, 0, 1));
-
-    this.position.add(dir.clone()
-      .mul(this.speed)
-      .mul(this.renderer.dt));
+    this.moveTowards(this.#target.pos.clone());
   }
 
   get zindex(): number {
@@ -118,7 +150,7 @@ class AntiBody implements Entity {
   }
 
   isDead(): boolean {
-    return (!this.started && this.antivirus.isDead()) || this.dead || !!this.#target?.isDead();
+    return (!this.started && this.antivirus.isDead()) || this.dead;
   }
 }
 
@@ -130,6 +162,7 @@ function isTargetBubble(b: Bubble): b is TargetBubble {
 
 export class AntiVirusBubble extends Bubble {
   private antibodyToSpawnCount: number;
+  private freeAntibodies: AntiBody[] = [];
   private antibodies: AntiBody[] = [];
   private lastRay: number;
   private lastRayTarget: Bubble | null = null;
@@ -235,6 +268,7 @@ export class AntiVirusBubble extends Bubble {
     if (this.antibodyToSpawnCount > 0 && Math.abs(this.radius - this.targetRadius) < 5) {
       const antibody = new AntiBody(this.renderer, this);
       this.antibodies.push(antibody);
+      this.freeAntibodies.push(antibody);
       this.renderer.otherEntities.push(antibody);
 
       this.antibodyToSpawnCount -= 1;
@@ -243,20 +277,28 @@ export class AntiVirusBubble extends Bubble {
     if (this.isDying())
       return;
 
-    const freeAntibodies = this.antibodies.length;
+    for (const antibody of this.antibodies) {
+      if (!this.freeAntibodies.includes(antibody) && antibody !== this.lastRayAntibody && !antibody.started)
+        this.freeAntibodies.push(antibody);
+    }
+
+    this.antibodies = this.antibodies.filter(a => !a.isDead());
+    this.freeAntibodies = this.freeAntibodies.filter(a => !a.isDead());
+
+    const freeAntibodies = this.freeAntibodies.length;
     if (freeAntibodies > 0 && this.renderer.totalTime - this.lastRay > cfg.ANTIVIRUS_RAY_COOLDOWN) {
       const target = this.findTarget();
       if (target) {
-        const antibody_i = this.antibodies.findIndex(a => !a.started);
-        this.lastRayAntibody = this.antibodies[antibody_i];
-        this.antibodies.splice(antibody_i, 1);
+        const antibody_i = this.freeAntibodies.findIndex(a => !a.started);
+        this.lastRayAntibody = this.freeAntibodies[antibody_i];
+        this.freeAntibodies.splice(antibody_i, 1);
         this.lastRay = this.renderer.totalTime;
         this.lastRayTarget = target;
         AntiVirusBubble.targetedViruses.set(target, this.lastRayAntibody);
       }
     }
 
-    if (freeAntibodies === 0 && this.antibodyToSpawnCount === 0)
+    if (this.antibodies.length === 0 && this.antibodyToSpawnCount === 0)
       this.kill({
         type: "other",
         message: "no antibodies left",
