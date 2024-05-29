@@ -38,7 +38,7 @@ export type KillReason = {
 export const bubbleClasses = {
   "bubble": {
     class_: Bubble,
-    probability: 1,
+    probability: cfg.NORMAL_BUBBLE_PROBABILITY,
   },
   "square": {
     class_: SquareBubble,
@@ -66,11 +66,18 @@ export function createBubble(
   renderer: Renderer,
   overrides?: BubbleOverrides,
 ): Bubble {
-  const possibilities = Object.values(bubbleClasses);
-  possibilities.sort((a, b) => a.probability - b.probability);
+  let possibilities = Object.values(bubbleClasses).map(v => ({...v}));
+  const sum = possibilities.reduce((sum, p) => sum + p.probability, 0);
+  for (const p of possibilities)
+    p.probability /= sum;
+  possibilities.sort((a, b) => b.probability - a.probability);
+
+  let prob = Math.random();
   for (const poss of possibilities) {
-    if (poss.probability < Math.random())
+    if (poss.probability < prob) {
+      prob -= poss.probability;
       continue;
+    }
 
     return new poss.class_(renderer, overrides);
   }

@@ -8,9 +8,12 @@ export type BubbleOverrides = {
   radius?: number,
   life?: number,
   velocity?: Vec2,
+  rotation?: number,
 };
 
 export class Bubble implements Entity {
+  public started: boolean = false;
+
   public pos: Vec2;
   public remainingLife: number;
   public velocity: Vec2 = Vec2.ZERO;
@@ -44,6 +47,7 @@ export class Bubble implements Entity {
     this.targetRadius = radius;
     this.remainingLife = life;
     this.targetVelocity = velocity;
+    this.targetRotation = overrides?.rotation ?? 0;
   }
 
   public static get displayName(): string {
@@ -64,6 +68,9 @@ export class Bubble implements Entity {
   }
 
   get radius(): number {
+    if (!this.started) {
+      return this.targetRadius;
+    }
     return clamp(this.interpolatedRadius, 0, null);
   }
 
@@ -183,6 +190,7 @@ export class Bubble implements Entity {
   public update() {
     if (this.isDead())
       return;
+    this.started = true;
 
     const dt = this.renderer.dt;
     this.remainingLife -= dt;

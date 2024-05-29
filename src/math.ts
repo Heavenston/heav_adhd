@@ -180,6 +180,18 @@ export class Vec2 {
       .add(b.clone().mul(t));
   }
 
+  public rotate(angle: number): Vec2 {
+    const cos = Math.cos(angle);
+    const sin = Math.sin(angle);
+
+    const px = this.x;
+    const py = this.y;
+    this.x = px * cos - py * sin;
+    this.y = px * sin + py * cos;
+
+    return this;
+  }
+
   public dot(other: Vec2): number {
     return this.x * other.x + this.y * other.y;
   }

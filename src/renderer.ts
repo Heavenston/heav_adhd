@@ -225,9 +225,8 @@ export class Renderer {
 
   public trySpawnBall(ball: Bubble): boolean {
     for (const other of this.bubbles) {
-      if (other.pos.clone().sub(ball.pos).norm() < other.maxRadius + ball.maxRadius) {
+      if (other.gapBetween(ball) <= 0)
         return false;
-      }
     }
     this.bubbles.push(ball);
     return true;
@@ -316,12 +315,13 @@ export class Renderer {
     this.currentTool.update();
 
     this.updateEntities(this.bubbles);
-    this.spawnBalls();
     this.updateEntities(this.otherEntities);
 
     this.updateStatusBar();
 
     this.draw();
+
+    this.spawnBalls();
 
     this.mouseLastPos = this.mousePos;
     this.clicked = false;
