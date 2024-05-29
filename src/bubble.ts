@@ -26,6 +26,10 @@ export type KillReason = {
 } | {
   type: "antivirus_ray",
   antivirus: AntiVirusBubble,
+} | {
+  // Kills itself because there isn't anyone, used by bubbles that can't die
+  // if nobody is here so they don't just sit there
+  type: "underpopulation_suicide"
 };
 
 export const bubbleClasses = {

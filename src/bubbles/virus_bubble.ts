@@ -5,6 +5,7 @@ import * as cfg from "../config";
 
 export class VirusBubble extends Bubble {
   public currentTarget: Bubble | null = null;
+  public underpopulatedSince: number = 0;
 
   constructor(
     renderer: Renderer,
@@ -29,7 +30,11 @@ export class VirusBubble extends Bubble {
     return 7.5;
   }
 
-  protected findNewTarget() {
+  protected findNewTarget(blacklist = [
+    BlackholeBubble,
+    VirusBubble,
+    AntiVirusBubble,
+  ], rec = true): void {
     // slowest bubble
     let target: Bubble | null = null;
     let targetValue = -Infinity;
@@ -38,11 +43,7 @@ export class VirusBubble extends Bubble {
         continue;
       if (bubble === this)
         continue;
-      if (bubble instanceof BlackholeBubble)
-        continue;
-      if (bubble instanceof VirusBubble)
-        continue;
-      if (bubble instanceof AntiVirusBubble)
+      if (blacklist.some(c => bubble instanceof c))
         continue;
 
       const value = -bubble.velocity.norm2();
@@ -59,6 +60,9 @@ export class VirusBubble extends Bubble {
       }
     }
     this.currentTarget = target;
+
+    if (!target && rec)
+      return this.findNewTarget([], rec = false);
   }
 
   public override update() {
@@ -68,8 +72,15 @@ export class VirusBubble extends Bubble {
       this.currentTarget = null;
     if (this.currentTarget === null)
       this.findNewTarget();
-    if (this.currentTarget === null)
+    if (this.currentTarget === null) {
+      this.underpopulatedSince += this.renderer.dt;
+      if (this.underpopulatedSince > cfg.UNDERPOPULATION_SUICIDE_AFTER)
+        this.kill({
+          type: "underpopulation_suicide",
+        });
       return;
+    }
+    this.underpopulatedSince = 0;
 
     const diff = this.currentTarget.pos.clone().sub(this.pos);
     const dist = diff.norm();
@@ -103,9 +114,12 @@ export class VirusBubble extends Bubble {
       }
       return;
     }
+
     const canKill = [BlackholeBubble, AntiVirusBubble];
-    if (reason.type === "bubble" && !canKill.some(class_ => reason.bubble instanceof class_))
-      return;
+    if (reason.type === "bubble" && !canKill.some(class_ => reason.bubble instanceof class_)) {
+      if (!(this.currentTarget instanceof VirusBubble && reason.bubble === this.currentTarget))
+        return;
+    }
 
     super.kill(reason);
   }
