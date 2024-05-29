@@ -42,6 +42,10 @@ export abstract class Tool {
 export class ForceFieldTool extends Tool {
   public currentForceField: ForceField | null = null;
 
+  public override clean(): void {
+    this.currentForceField?.start();
+  }
+
   public override update() {
     const rend = this.renderer;
 
