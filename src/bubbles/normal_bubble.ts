@@ -14,6 +14,7 @@ export class Bubble implements Entity {
   public pos: Vec2;
   public remainingLife: number;
   public velocity: Vec2 = Vec2.ZERO;
+  public rotation: number = 0;
   protected targetVelocity: Vec2;
   protected interpolatedRadius: number = 0;
   protected targetRadius: number;
@@ -203,17 +204,23 @@ export class Bubble implements Entity {
     this.updateBubbleCollisions();
   }
 
+  public applyCtxTransform() {
+    const ctx = this.renderer.ctx;
+    ctx.translate(this.pos.x, this.pos.y);
+    ctx.rotate(this.rotation);
+  }
+
   public draw() {
     const ctx = this.renderer.ctx;
+    ctx.save();
+    this.applyCtxTransform();
+
     ctx.fillStyle = this.color;
     ctx.beginPath();
-    ctx.arc(
-      this.pos.x,
-      this.pos.y,
-      this.radius,
-      0, Math.PI * 2,
-    );
+    ctx.arc(0,0, this.radius, 0, Math.PI * 2);
     ctx.fill();
+
+    ctx.restore();
   }
 
   public isDead(): boolean {
