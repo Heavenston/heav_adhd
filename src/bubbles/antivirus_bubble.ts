@@ -43,6 +43,9 @@ class AntiBody implements Entity {
   private moveTowards(target: Vec2): number {
     const diff = target.clone().sub(this.position);
     const dist = diff.norm();
+    if (dist === 0) {
+      return 0;
+    }
     const dir = diff.clone().div(dist);
 
     this.rotation = dir.angleDiff(Vec2.ZERO) - Math.PI/2;
@@ -72,10 +75,11 @@ class AntiBody implements Entity {
         return;
       }
 
-      const dist = this.moveTowards(this.antivirus.pos.clone()
+      this.moveTowards(this.antivirus.pos.clone()
         .add(this.relativePosition));
 
-      if (dist < 10) {
+      const dist_surf = this.antivirus.distanceFromSurface(this.position);
+      if (dist_surf < 5) {
         this.#isGoingHome = false;
         return;
       }
@@ -151,6 +155,10 @@ class AntiBody implements Entity {
 
   isDead(): boolean {
     return (!this.started && this.antivirus.isDead()) || this.dead;
+  }
+
+  afterRemove(): void {
+    this.dead = true;
   }
 }
 
@@ -277,13 +285,15 @@ export class AntiVirusBubble extends Bubble {
     if (this.isDying())
       return;
 
+    const lastRayIsFinished = this.renderer.totalTime - this.lastRay > cfg.ANTIVIRUS_RAY_ANIMATION_DURATION;
+
     for (const antibody of this.antibodies) {
-      if (!this.freeAntibodies.includes(antibody) && antibody !== this.lastRayAntibody && !antibody.started)
+      if (!this.freeAntibodies.includes(antibody) && (antibody !== this.lastRayAntibody || lastRayIsFinished) && !antibody.started)
         this.freeAntibodies.push(antibody);
     }
 
     this.antibodies = this.antibodies.filter(a => !a.isDead());
-    this.freeAntibodies = this.freeAntibodies.filter(a => !a.isDead());
+    this.freeAntibodies = this.freeAntibodies.filter(a => !a.isDead() && !a.started);
 
     const freeAntibodies = this.freeAntibodies.length;
     if (freeAntibodies > 0 && this.renderer.totalTime - this.lastRay > cfg.ANTIVIRUS_RAY_COOLDOWN) {
