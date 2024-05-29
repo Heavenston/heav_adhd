@@ -89,7 +89,45 @@ export class VirusBubble extends Bubble {
     const force = clamp(dist * 3, this.currentTarget.velocity.norm() * 2, null);
     const dir = diff.clone().div(dist);
 
+    this.targetRotation = dir.angleDiff(Vec2.ZERO);
     this.targetVelocity = dir.mul(force);
+  }
+
+  public override draw() {
+    const ctx = this.renderer.ctx;
+    ctx.save();
+    this.applyCtxTransform();
+
+    ctx.fillStyle = this.color;
+    ctx.strokeStyle = this.color;
+    ctx.lineCap = "round";
+    ctx.lineWidth = 5;
+
+    const angles = [
+      0.00, 0.25, 0.50, 0.75, 1.00, 1.25, 1.50, 1.75
+    ].map(v => v * Math.PI);
+
+    ctx.beginPath();
+    ctx.arc(0,0, this.radius, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.beginPath();
+    const outer_radius = this.radius * 1.25;
+    for (const angle of angles) {
+      const targeta = Vec2.rotated(angle).mul(this.radius);
+      const targetb = Vec2.rotated(angle).mul(outer_radius);
+      ctx.moveTo(targeta.x, targeta.y);
+      ctx.lineTo(targetb.x, targetb.y);
+
+      const sa = angle - 0.1;
+      const sb = angle + 0.1;
+      const target1 = Vec2.rotated(sa).mul(outer_radius);
+      ctx.moveTo(target1.x, target1.y)
+      ctx.arc(0,0, outer_radius, sa, sb);
+    }
+    ctx.stroke();
+
+    ctx.restore();
   }
 
   public override kill(reason: KillReason) {

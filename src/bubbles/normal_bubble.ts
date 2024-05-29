@@ -18,6 +18,7 @@ export class Bubble implements Entity {
   protected targetVelocity: Vec2;
   protected interpolatedRadius: number = 0;
   protected targetRadius: number;
+  protected targetRotation: number = 0;
 
   #opacity: number = 1;
   protected closest: number = 9999;
@@ -167,6 +168,10 @@ export class Bubble implements Entity {
     }
   }
 
+  protected get rotationInterpolationSpeed(): number {
+    return 100;
+  }
+
   protected get velocityInterpolationSpeed(): number {
     return 5;
   }
@@ -187,6 +192,15 @@ export class Bubble implements Entity {
       this.#opacity = Math.pow(this.remainingLife / cfg.BUBBLE_DYING_DURATION, 3);
       return;
     }
+
+    let realTargetRot = ((this.targetRotation % (Math.PI*2)) + Math.PI * 2) % (Math.PI*2);
+    if (Math.abs(realTargetRot - this.rotation) > Math.PI) {
+      if (realTargetRot < this.rotation)
+        realTargetRot += Math.PI*2;
+      else
+        realTargetRot -= Math.PI*2;
+    }
+    this.rotation = lerp(this.rotation, realTargetRot, clamp(dt * this.rotationInterpolationSpeed, 0, 1));
 
     this.interpolatedRadius = lerp(
       this.interpolatedRadius,
