@@ -1,5 +1,5 @@
 import { BlackholeBubble, Bubble, BubbleOverrides, KillReason, VirusBubble } from "../bubble";
-import { Vec2, clamp, gaussianRandom, lerp } from "../math";
+import { Vec2, clamp, expDecay, gaussianRandom, modExpDecay } from "../math";
 import { Entity, Renderer } from "../renderer";
 import * as cfg from "../config";
 
@@ -48,10 +48,20 @@ class AntiBody implements Entity {
     }
     const dir = diff.clone().div(dist);
 
-    this.rotation = dir.angleDiff(Vec2.ZERO) - Math.PI/2;
-    this.speed = lerp(this.speed, cfg.ANTIVIRUS_ANTIBODY_SPEED, clamp(this.renderer.dt, 0, 1));
+    const targetRotation = dir.angleDiff(Vec2.ZERO) - Math.PI/2;
+    this.rotation = modExpDecay(
+      this.rotation, targetRotation,
+      Math.PI * 2,
+      this.renderer.dt, 0.05,
+    );
+    this.speed = expDecay(
+      this.speed, cfg.ANTIVIRUS_ANTIBODY_SPEED,
+      this.renderer.dt, 0.5,
+    );
 
-    this.position.add(dir.clone()
+    const actualDir = Vec2.rotated(this.rotation + Math.PI/2);
+
+    this.position.add(actualDir.clone()
       .mul(this.speed)
       .mul(this.renderer.dt));
 
@@ -205,8 +215,8 @@ export class AntiVirusBubble extends Bubble {
     return 0;
   }
 
-  protected override get radiusInterpolationSpeed(): number {
-    return 5;
+  protected override get radiusInterpolationHalfLife(): number {
+    return 0.2;
   }
 
   public override get zindex() {

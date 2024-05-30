@@ -26,8 +26,8 @@ export class VirusBubble extends Bubble {
     return 0;
   }
 
-  protected override get velocityInterpolationSpeed(): number {
-    return 7.5;
+  protected override get velocityInterpolationHalfLife(): number {
+    return 0.25;
   }
 
   protected findNewTarget(blacklist = [

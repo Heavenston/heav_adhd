@@ -1,5 +1,5 @@
 import { KillReason } from "../bubble";
-import { Vec2, clamp, gaussianRandom, lerp } from "../math";
+import { Vec2, clamp, expDecay, gaussianRandom, modExpDecay } from "../math";
 import { BubbleColorCfg, Entity, Renderer } from "../renderer";
 import * as cfg from "../config";
 
@@ -175,16 +175,16 @@ export class Bubble implements Entity {
     }
   }
 
-  protected get rotationInterpolationSpeed(): number {
-    return 100;
+  protected get rotationInterpolationHalfLife(): number {
+    return 0.1;
   }
 
-  protected get velocityInterpolationSpeed(): number {
-    return 5;
+  protected get velocityInterpolationHalfLife(): number {
+    return 0.5;
   }
 
-  protected get radiusInterpolationSpeed(): number {
-    return 10;
+  protected get radiusInterpolationHalfLife(): number {
+    return 0.05;
   }
 
   public update() {
@@ -201,24 +201,19 @@ export class Bubble implements Entity {
       return;
     }
 
-    let realTargetRot = ((this.targetRotation % (Math.PI*2)) + Math.PI * 2) % (Math.PI*2);
-    if (Math.abs(realTargetRot - this.rotation) > Math.PI) {
-      if (realTargetRot < this.rotation)
-        realTargetRot += Math.PI*2;
-      else
-        realTargetRot -= Math.PI*2;
-    }
-    this.rotation = lerp(this.rotation, realTargetRot, clamp(dt * this.rotationInterpolationSpeed, 0, 1));
-
-    this.interpolatedRadius = lerp(
-      this.interpolatedRadius,
-      this.targetRadius,
-      clamp(dt * this.radiusInterpolationSpeed, 0, 1)
+    this.rotation = modExpDecay(
+      this.rotation, this.targetRotation,
+      Math.PI * 2,
+      dt, this.rotationInterpolationHalfLife
     );
-    this.velocity = Vec2.lerp(
-      this.velocity,
-      this.targetVelocity,
-      clamp(dt * this.velocityInterpolationSpeed, 0, 1)
+
+    this.interpolatedRadius = expDecay(
+      this.interpolatedRadius, this.targetRadius,
+      dt, this.radiusInterpolationHalfLife,
+    );
+    this.velocity = Vec2.expDecay(
+      this.velocity, this.targetVelocity,
+      dt, this.velocityInterpolationHalfLife,
     );
     this.pos.add(this.velocity.clone().mul(dt));
 
